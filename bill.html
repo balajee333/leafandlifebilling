@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset='utf-8'>
+  <meta name='viewport' content='width=device-width,initial-scale=1'>
+  <title>Bill Editor</title>
+  <style>
+    body{margin:0;font-family:Segoe UI,Arial,sans-serif;background:linear-gradient(135deg,#f4f8f4 0%,#eaf4ea 100%);color:#223126}
+    .page{max-width:1000px;margin:24px auto;padding:24px}
+    .header{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
+    .header h1{margin:0;color:#2e7d32}
+    .header p{margin:6px 0 0;color:#4f6b53}
+    .actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+    button,a.button{display:inline-flex;align-items:center;justify-content:center;border:none;border-radius:10px;padding:10px 14px;background:#2e7d32;color:#fff;text-decoration:none;cursor:pointer;font-weight:700}
+    button.secondary,a.button.secondary{background:#f2f7f2;color:#2e7d32;border:1px solid #d7e6da}
+    .panel{background:#fff;border-radius:18px;padding:20px;box-shadow:0 18px 40px rgba(26,61,35,.08);margin-top:18px}
+    .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+    .field{display:flex;flex-direction:column;gap:6px;margin-bottom:12px}
+    label{font-size:11px;color:#6b7a6f;font-weight:700;letter-spacing:.08em;text-transform:uppercase}
+    input{width:100%;padding:11px 12px;border:1px solid #dbe7de;border-radius:10px;background:#fcfdfc;box-sizing:border-box}
+    input:focus{outline:none;border-color:#2e7d32}
+    .table-shell{border:1px solid #e8efe9;border-radius:14px;overflow:hidden;background:#fff}
+    table{width:100%;border-collapse:collapse}
+    th,td{padding:10px 10px;border-bottom:1px solid #e8efe9;text-align:left}
+    th{background:#f5faf5;color:#2e7d32;font-size:12px;text-transform:uppercase;letter-spacing:.06em}
+    .delete-btn{background:#fff;color:#c62828;border:1px solid #f2c7c7;padding:8px 10px}
+    .total{display:flex;justify-content:flex-end;align-items:center;gap:10px;margin-top:16px;padding:12px 16px;border:1px solid #dce8de;border-radius:12px;background:#f7fbf7;width:fit-content;margin-left:auto;font-weight:700;color:#1b5e20}
+    .status-pill{display:inline-block;padding:6px 10px;border-radius:999px;background:#eef7ed;color:#2e7d32;font-weight:700}
+    .print-layout{display:none}
+    .invoice-card{background:#fff;border:1px solid #e5eee4;border-radius:24px;padding:28px;box-shadow:none}
+    .invoice-header{display:flex;justify-content:space-between;align-items:center;gap:16px;border-bottom:1px solid #e3ece4;padding-bottom:16px;margin-bottom:16px}
+    .logo-block{display:flex;align-items:center;gap:12px}
+    .logo-frame{width:72px;height:72px;display:flex;align-items:center;justify-content:center;border-radius:18px;background:#f4fbf4;overflow:hidden;border:1px solid #d7e8d7}
+    .brand-logo{max-width:100%;max-height:100%;display:block;object-fit:contain}
+    .logo-mark{width:46px;height:46px;border-radius:14px;background:linear-gradient(135deg,#2e7d32,#6bbf6f);display:flex;align-items:center;justify-content:center;font-size:24px;color:#fff}
+    .brand-block h2{margin:0;color:#2e7d32;font-size:22px}
+    .brand-block p{margin:4px 0 0;color:#4f6b53;font-size:13px}
+    .invoice-meta{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-bottom:16px}
+    .meta-box{background:#f7fbf7;border:1px solid #e3ece4;border-radius:12px;padding:10px 12px}
+    .meta-label{font-size:11px;color:#6b7a6f;text-transform:uppercase;letter-spacing:.08em;font-weight:700}
+    .meta-value{font-size:14px;color:#223126;margin-top:4px}
+    .print-table{width:100%;border-collapse:collapse;margin-top:8px}
+    .print-table th,.print-table td{padding:10px;border-bottom:1px solid #e8efe9;text-align:left}
+    .print-table th{background:#f5faf5;color:#2e7d32;font-size:12px;text-transform:uppercase;letter-spacing:.06em}
+    .print-total{display:flex;justify-content:flex-end;align-items:center;gap:10px;margin-top:16px;padding:12px 16px;border:1px solid #dce8de;border-radius:12px;background:#f7fbf7;width:fit-content;margin-left:auto;font-weight:700;color:#1b5e20}
+    .footer-row{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-top:20px;padding-top:16px;border-top:1px solid #e3ece4}
+    .contact-block{font-size:13px;line-height:1.6;color:#4f6b53}
+    .scan-block{text-align:center;min-width:180px}
+    .scan-label{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:#2e7d32;font-weight:700;margin-bottom:8px}
+    .scan-block img{max-width:180px;width:100%;height:auto;border:1px solid #e6eee7;border-radius:18px;padding:8px;background:#fff;box-sizing:border-box}
+    @media (max-width:700px){.grid{grid-template-columns:1fr}.invoice-meta{grid-template-columns:1fr}.footer-row{flex-direction:column}.print-layout{padding:0}} 
+    @media print{body{background:#fff}.page{margin:0;padding:0;max-width:none}.editor-layout,.actions button,.actions a,.add-row-btn{display:none!important}.print-layout{display:block!important}.invoice-card{box-shadow:none;border:0;padding:0}.panel,.header{display:none!important}}</style>
+</head>
+<body>
+  <div class='page'>
+    <div class='editor-layout'>
+      <div class='header'>
+        <div>
+          <h1>Bill Editor</h1>
+          <p>Create, save, and deliver bills. Drafts remain editable; delivered bills are locked.</p>
+        </div>
+        <div class='actions'>
+          <a class='button secondary' href='index.html'>Back to Bills</a>
+          <button id='deleteBillBtn' class='button secondary' style='background:#fff;color:#c62828;border:1px solid #f2c7c7' onclick='deleteCurrentBill()'>Delete Bill</button>
+          <button id='saveDraftBtn' class='secondary' onclick='saveDraft()'>Save Draft</button>
+          <button id='markDeliveredBtn' onclick='markDelivered()'>Mark as Delivered</button>
+          <button id='printBtn' class='secondary' onclick='printBill()'>Print / Save PDF</button>
+        </div>
+      </div>
+
+      <div class='panel'>
+        <div class='grid'>
+          <div class='field'><label>Bill #</label><div id='billNumber' class='status-pill'></div></div>
+          <div class='field'><label>Status</label><div id='status' class='status-pill'></div></div>
+          <div class='field'><label>Customer Name</label><input id='customerName' placeholder='Customer name'></div>
+          <div class='field'><label>Phone Number</label><input id='customerPhone' type='tel' placeholder='Phone number'></div>
+          <div class='field'><label>Date</label><input id='billDate' type='date'></div>
+          <div class='field'><label>Amount</label><div id='summaryTotal' class='status-pill'>₹ 0.00</div></div>
+        </div>
+
+        <div class='field' style='margin-top:10px;'><label>Items</label>
+          <button id='addItemBtn' class='secondary add-row-btn' onclick='addItemRow()' style='margin-bottom:10px'>+ Add Item</button>
+          <div class='table-shell'>
+            <table id='itemsTable'>
+              <thead><tr><th>Product</th><th>Qty</th><th>Price</th><th>Total</th><th></th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class='total'><span>Total</span><span id='totalValue'>₹ 0.00</span></div>
+      </div>
+    </div>
+
+    <div class='print-layout'>
+      <div class='invoice-card'>
+        <div class='invoice-header'>
+          <div class='logo-block'>
+            <div class='logo-frame'>
+              <img class='brand-logo' src='logo.png' alt='Leaf & Life logo'>
+            </div>
+            <div class='brand-block'>
+              <h2>Leaf & Life Nursery</h2>
+              <p>Bill / Delivery receipt</p>
+            </div>
+          </div>
+          <div class='status-pill' id='printStatus'>DRAFT</div>
+        </div>
+
+        <div class='invoice-meta'>
+          <div class='meta-box'><div class='meta-label'>Bill #</div><div class='meta-value' id='printBillNumber'>—</div></div>
+          <div class='meta-box'><div class='meta-label'>Date</div><div class='meta-value' id='printDate'>—</div></div>
+          <div class='meta-box'><div class='meta-label'>Customer</div><div class='meta-value' id='printCustomerName'>—</div></div>
+          <div class='meta-box'><div class='meta-label'>Phone</div><div class='meta-value' id='printPhone'>—</div></div>
+        </div>
+
+        <table class='print-table'>
+          <thead><tr><th>Product</th><th>Qty</th><th>Price</th><th>Total</th></tr></thead>
+          <tbody id='printItemsBody'></tbody>
+        </table>
+
+        <div class='print-total'><span>Total</span><span id='printTotal'>₹ 0.00</span></div>
+
+        <div class='footer-row'>
+          <div class='contact-block'>
+            <b>Leaf & Life Nursery</b><br>
+            Kelambakkam, Chennai<br>
+            9942093711<br>
+            @leafandlifenursery
+          </div>
+          <div class='scan-block'>
+            <div class='scan-label'>Scan to Pay</div>
+            <img src='QR-code.jpeg' alt='Scan to pay QR code'>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    let currentFileName = params.get('fileName');
+    let currentBill = null;
+
+    const billNumberEl = document.getElementById('billNumber');
+    const statusEl = document.getElementById('status');
+    const customerNameEl = document.getElementById('customerName');
+    const customerPhoneEl = document.getElementById('customerPhone');
+    const billDateEl = document.getElementById('billDate');
+    const totalValueEl = document.getElementById('totalValue');
+    const summaryTotalEl = document.getElementById('summaryTotal');
+    const saveDraftBtn = document.getElementById('saveDraftBtn');
+    const markDeliveredBtn = document.getElementById('markDeliveredBtn');
+    const addItemBtn = document.getElementById('addItemBtn');
+
+    function setDefaultDate() {
+      billDateEl.value = new Date().toISOString().slice(0, 10);
+    }
+
+    function createEmptyBill() {
+      const nextNumber = String((Number(localStorage.lb || 0) + 1)).padStart(3, '0');
+      localStorage.lb = nextNumber;
+      return {
+        billNumber: nextNumber,
+        status: 'draft',
+        customerName: '',
+        customerPhone: '',
+        date: new Date().toISOString().slice(0, 10),
+        items: [],
+        total: 0
+      };
+    }
+
+    async function loadBill() {
+      if (!currentFileName) {
+        currentBill = createEmptyBill();
+        renderBill(currentBill);
+        return;
+      }
+
+      const res = await fetch(`/api/bill?fileName=${encodeURIComponent(currentFileName)}`);
+      if (!res.ok) {
+        const err = await res.json();
+        alert(err.error || 'Could not load bill.');
+        return;
+      }
+      const bill = await res.json();
+      currentBill = bill;
+      renderBill(bill);
+    }
+
+    function renderBill(bill) {
+      currentBill = bill;
+      billNumberEl.textContent = bill.billNumber || '';
+      document.title = `leafandlifenursery_bill#${bill.billNumber || '000'}`;
+      statusEl.textContent = (bill.status || 'draft').toUpperCase();
+      customerNameEl.value = bill.customerName || '';
+      customerPhoneEl.value = bill.customerPhone || '';
+      billDateEl.value = bill.date || new Date().toISOString().slice(0, 10);
+      const tbody = document.querySelector('#itemsTable tbody');
+      tbody.innerHTML = '';
+      const items = Array.isArray(bill.items) && bill.items.length ? bill.items : [];
+      if (!items.length) {
+        addItemRow('', 1, 0);
+      } else {
+        items.forEach(item => addItemRow(item.product || '', item.qty || 0, item.price || 0));
+      }
+      updateTotals();
+      const isDelivered = bill.status === 'delivered';
+      saveDraftBtn.style.display = isDelivered ? 'none' : 'inline-flex';
+      markDeliveredBtn.style.display = isDelivered ? 'none' : 'inline-flex';
+      addItemBtn.style.display = isDelivered ? 'none' : 'inline-flex';
+      setEditable(!isDelivered);
+    }
+
+    function setEditable(editable) {
+      customerNameEl.disabled = !editable;
+      customerPhoneEl.disabled = !editable;
+      billDateEl.disabled = !editable;
+      document.querySelectorAll('#itemsTable tbody input').forEach(input => {
+        input.disabled = !editable;
+      });
+      document.querySelectorAll('.delete-btn').forEach(button => {
+        button.disabled = !editable;
+      });
+    }
+
+    function addItemRow(product = '', qty = 1, price = 0) {
+      const tbody = document.querySelector('#itemsTable tbody');
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td><input class='item-product' placeholder='Product' value='${product}'></td>
+        <td><input class='item-qty' type='number' min='0' value='${qty}'></td>
+        <td><input class='item-price' type='number' step='0.01' min='0' value='${price}'></td>
+        <td><span class='item-total'>₹ 0.00</span></td>
+        <td><button class='delete-btn' type='button' onclick='removeItemRow(this)'>🗑</button></td>
+      `;
+      tr.querySelectorAll('input').forEach(input => {
+        input.addEventListener('input', updateTotals);
+      });
+      tbody.appendChild(tr);
+      updateTotals();
+    }
+
+    function removeItemRow(button) {
+      button.closest('tr').remove();
+      updateTotals();
+    }
+
+    function updateTotals() {
+      let total = 0;
+      document.querySelectorAll('#itemsTable tbody tr').forEach(row => {
+        const qty = Number(row.querySelector('.item-qty').value || 0);
+        const price = Number(row.querySelector('.item-price').value || 0);
+        const itemTotal = qty * price;
+        row.querySelector('.item-total').textContent = `₹ ${itemTotal.toFixed(2)}`;
+        total += itemTotal;
+      });
+      const formatted = `₹ ${total.toFixed(2)}`;
+      totalValueEl.textContent = formatted;
+      summaryTotalEl.textContent = formatted;
+      return total;
+    }
+
+    function collectBillData(status) {
+      const items = Array.from(document.querySelectorAll('#itemsTable tbody tr')).map(row => {
+        const product = row.querySelector('.item-product').value.trim();
+        const qty = Number(row.querySelector('.item-qty').value || 0);
+        const price = Number(row.querySelector('.item-price').value || 0);
+        return { product, qty, price, total: qty * price };
+      });
+      const total = updateTotals();
+      return {
+        fileName: currentFileName || null,
+        billNumber: billNumberEl.textContent,
+        customerName: customerNameEl.value.trim(),
+        customerPhone: customerPhoneEl.value.trim(),
+        date: billDateEl.value,
+        items,
+        total,
+        status
+      };
+    }
+
+    async function persistBill(status) {
+      const payload = collectBillData(status);
+      const res = await fetch('/api/update-bill', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(payload)
+      });
+      const result = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        alert(result.error || 'Unable to save bill.');
+        return;
+      }
+      currentFileName = result.fileName;
+      const url = new URL(window.location.href);
+      url.searchParams.set('fileName', currentFileName);
+      history.replaceState({}, '', url);
+      await loadBill();
+      alert(status === 'delivered' ? 'Bill marked as delivered.' : 'Draft saved successfully.');
+    }
+
+    async function saveDraft() {
+      if (!customerNameEl.value.trim() || !customerPhoneEl.value.trim()) {
+        alert('Please enter both the customer name and phone number before saving a draft.');
+        return;
+      }
+      await persistBill('draft');
+    }
+
+    async function deleteCurrentBill() {
+      if (!currentFileName) {
+        alert('No bill selected to delete.');
+        return;
+      }
+      if (!confirm('Delete this bill? This cannot be undone.')) return;
+      const res = await fetch('/api/delete-bill', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ fileName: currentFileName })
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        alert('Could not delete bill: ' + (err.error || 'Unknown error'));
+        return;
+      }
+      window.location.href = 'index.html';
+    }
+
+    async function markDelivered() {
+      if (!customerNameEl.value.trim() || !customerPhoneEl.value.trim()) {
+        alert('Please enter both the customer name and phone number before marking the bill as delivered.');
+        return;
+      }
+      await persistBill('delivered');
+    }
+
+    function syncPrintLayout() {
+      const items = Array.from(document.querySelectorAll('#itemsTable tbody tr')).map(row => ({
+        product: row.querySelector('.item-product').value.trim(),
+        qty: Number(row.querySelector('.item-qty').value || 0),
+        price: Number(row.querySelector('.item-price').value || 0),
+        total: Number(row.querySelector('.item-qty').value || 0) * Number(row.querySelector('.item-price').value || 0)
+      }));
+      const total = updateTotals();
+      document.getElementById('printStatus').textContent = (statusEl.textContent || 'DRAFT').trim();
+      document.getElementById('printBillNumber').textContent = billNumberEl.textContent || '—';
+      document.getElementById('printDate').textContent = billDateEl.value || '—';
+      document.getElementById('printCustomerName').textContent = customerNameEl.value.trim() || '—';
+      document.getElementById('printPhone').textContent = customerPhoneEl.value.trim() || '—';
+      document.getElementById('printTotal').textContent = `₹ ${total.toFixed(2)}`;
+      const tbody = document.getElementById('printItemsBody');
+      tbody.innerHTML = '';
+      if (!items.length) {
+        tbody.innerHTML = '<tr><td colspan="4">No items added</td></tr>';
+        return;
+      }
+      items.forEach(item => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${item.product || '—'}</td><td>${item.qty}</td><td>₹ ${Number(item.price).toFixed(2)}</td><td>₹ ${Number(item.total).toFixed(2)}</td>`;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function printBill() {
+      syncPrintLayout();
+      window.print();
+    }
+
+    setDefaultDate();
+    loadBill();
+  </script>
+</body>
+</html>
