@@ -90,7 +90,7 @@ function listBills() {
     .sort((a, b) => new Date(b.updatedAt || b.createdAt || 0) - new Date(a.updatedAt || a.createdAt || 0));
 }
 
-app.get('/bills', (req, res) => {
+app.get('/api/bills', (req, res) => {
   try {
     res.json(listBills());
   } catch (err) {
@@ -98,7 +98,7 @@ app.get('/bills', (req, res) => {
   }
 });
 
-app.get('/bill', (req, res) => {
+app.get('/api/bill', (req, res) => {
   try {
     const fileName = req.query.fileName;
     if (!fileName) throw new Error('fileName query parameter is required');
@@ -108,7 +108,7 @@ app.get('/bill', (req, res) => {
   }
 });
 
-app.post('/update-bill', (req, res) => {
+app.post('/api/update-bill', (req, res) => {
   try {
     const updated = req.body;
     const result = saveBill(updated, updated.fileName || null);
@@ -118,7 +118,7 @@ app.post('/update-bill', (req, res) => {
   }
 });
 
-app.post('/delete-bill', (req, res) => {
+app.post('/api/delete-bill', (req, res) => {
   try {
     const { fileName } = req.body;
     if (!fileName) throw new Error('fileName is required');
