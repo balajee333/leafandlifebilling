@@ -74,19 +74,20 @@ export default function Home() {
             <h2>Draft Bills</h2>
             <table>
               <thead>
-                <tr><th>Bill #</th><th>Customer</th><th>Date</th><th>Total</th><th>Action</th></tr>
+                <tr><th>Bill #</th><th>Customer</th><th>Date</th><th>Total</th><th>Paid</th><th>Action</th></tr>
               </thead>
               <tbody>
                 {loading ? (
-                  <tr><td colSpan='5' className='empty'>Loading bills…</td></tr>
+                  <tr><td colSpan='6' className='empty'>Loading bills…</td></tr>
                 ) : drafts.length === 0 ? (
-                  <tr><td colSpan='5' className='empty'>No draft bills yet.</td></tr>
+                  <tr><td colSpan='6' className='empty'>No draft bills yet.</td></tr>
                 ) : drafts.map(bill => (
                   <tr key={bill.fileName}>
                     <td>{bill.billNumber}</td>
                     <td>{bill.customerName || '—'}</td>
                     <td>{bill.date || '—'}</td>
                     <td>₹ {Number(bill.total || 0).toFixed(2)}</td>
+                    <td><span className={`badge ${bill.paid ? 'paid' : 'unpaid'}`}>{bill.paid ? 'Paid' : 'Not Paid'}</span></td>
                     <td>
                       <div className='actions'>
                         <a className='link' href={`/bill?fileName=${encodeURIComponent(bill.fileName)}`}>Open</a>
@@ -103,19 +104,20 @@ export default function Home() {
             <h2>Delivered Bills</h2>
             <table>
               <thead>
-                <tr><th>Bill #</th><th>Customer</th><th>Date</th><th>Total</th><th>Action</th></tr>
+                <tr><th>Bill #</th><th>Customer</th><th>Date</th><th>Total</th><th>Paid</th><th>Action</th></tr>
               </thead>
               <tbody>
                 {loading ? (
-                  <tr><td colSpan='5' className='empty'>Loading bills…</td></tr>
+                  <tr><td colSpan='6' className='empty'>Loading bills…</td></tr>
                 ) : delivered.length === 0 ? (
-                  <tr><td colSpan='5' className='empty'>No delivered bills yet.</td></tr>
+                  <tr><td colSpan='6' className='empty'>No delivered bills yet.</td></tr>
                 ) : delivered.map(bill => (
                   <tr key={bill.fileName}>
                     <td>{bill.billNumber}</td>
                     <td>{bill.customerName || '—'}</td>
                     <td>{bill.date || '—'}</td>
                     <td>₹ {Number(bill.total || 0).toFixed(2)}</td>
+                    <td><span className={`badge ${bill.paid ? 'paid' : 'unpaid'}`}>{bill.paid ? 'Paid' : 'Not Paid'}</span></td>
                     <td>
                       <div className='actions'>
                         <a className='link' href={`/bill?fileName=${encodeURIComponent(bill.fileName)}`}>Open</a>
@@ -141,7 +143,7 @@ export default function Home() {
         .top-actions{display:flex;gap:10px;flex-wrap:wrap}
         button,a.button{display:inline-flex;align-items:center;justify-content:center;border:none;border-radius:10px;padding:10px 14px;background:#2e7d32;color:#fff;text-decoration:none;cursor:pointer;font-weight:700}
         .button.secondary{background:#f2f7f2;color:#2e7d32;border:1px solid #d7e6da}
-        .grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+        .grid{display:grid;grid-template-columns:1fr;gap:18px}
         .panel{background:#fff;border-radius:18px;padding:18px;box-shadow:0 18px 40px rgba(26,61,35,.08)}
         .panel h2{margin:0 0 12px;font-size:18px;color:#2e7d32}
         table{width:100%;border-collapse:collapse}
@@ -152,6 +154,9 @@ export default function Home() {
         .actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
         .actions .link{display:inline-flex;align-items:center;justify-content:center;min-height:36px;padding:8px 10px;border-radius:10px;text-decoration:none;color:#2e7d32;font-weight:700}
         .actions button{min-height:36px}
+        .badge{display:inline-flex;align-items:center;justify-content:center;padding:6px 10px;border-radius:999px;font-size:12px;font-weight:700}
+        .badge.paid{background:#2e7d32;color:#fff}
+        .badge.unpaid{background:#f2f7f2;color:#2e7d32;border:1px solid #d7e6da}
         @media (max-width:800px){.grid{grid-template-columns:1fr}}
       `}</style>
     </>

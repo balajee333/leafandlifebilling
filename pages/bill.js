@@ -12,6 +12,7 @@ export default function BillPage() {
   const [currentFileName, setCurrentFileName] = useState('');
   const [billNumber, setBillNumber] = useState('---');
   const [status, setStatus] = useState('draft');
+  const [paid, setPaid] = useState(false);
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
   const [date, setDate] = useState(today);
@@ -34,6 +35,7 @@ export default function BillPage() {
     setCurrentFileName('');
     setBillNumber('---');
     setStatus('draft');
+    setPaid(false);
     setCustomerName('');
     setCustomerPhone('');
     setDate(today);
@@ -53,6 +55,7 @@ export default function BillPage() {
       setCurrentFileName(name);
       setBillNumber(bill.billNumber || '---');
       setStatus(bill.status || 'draft');
+      setPaid(bill.paid ?? false);
       setCustomerName(bill.customerName || '');
       setCustomerPhone(bill.customerPhone || '');
       setDate(bill.date || today);
@@ -79,7 +82,7 @@ export default function BillPage() {
     });
   }
 
-  function collectBillData(targetStatus) {
+  function collectBillData(targetStatus, paidState = paid) {
     return {
       fileName: currentFileName || null,
       billNumber: billNumber === '---' ? null : billNumber,
@@ -93,12 +96,13 @@ export default function BillPage() {
         total: Number(item.qty || 0) * Number(item.price || 0)
       })),
       total,
-      status: targetStatus
+      status: targetStatus,
+      paid: paidState
     };
   }
 
-  async function persistBill(targetStatus) {
-    const payload = collectBillData(targetStatus);
+  async function persistBill(targetStatus, paidState = paid) {
+    const payload = collectBillData(targetStatus, paidState);
     const res = await fetch('/api/update-bill', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -112,6 +116,7 @@ export default function BillPage() {
     setCurrentFileName(result.fileName);
     setBillNumber(result.billNumber || billNumber);
     setStatus(result.status || targetStatus);
+    setPaid(result.paid ?? paidState);
     router.replace({ pathname: '/bill', query: { fileName: result.fileName } }, undefined, { shallow: true });
     alert(targetStatus === 'delivered' ? 'Bill marked as delivered.' : 'Draft saved successfully.');
   }
@@ -130,6 +135,11 @@ export default function BillPage() {
       return;
     }
     await persistBill('delivered');
+  }
+
+  async function markPaid() {
+    if (paid) return;
+    await persistBill(status, true);
   }
 
   async function deleteCurrentBill() {
@@ -180,6 +190,11 @@ export default function BillPage() {
               <button className='button secondary delete-action' onClick={deleteCurrentBill}>Delete Bill</button>
               {!isDelivered && <button className='button secondary' onClick={saveDraft}>Save Draft</button>}
               {!isDelivered && <button className='button' onClick={markDelivered}>Mark as Delivered</button>}
+              {!paid ? (
+                <button className='button secondary' onClick={markPaid}>Mark as Paid</button>
+              ) : (
+                <button className='button secondary' disabled>Paid</button>
+              )}
               <button className='button secondary' onClick={printBill}>Print / Save PDF</button>
             </div>
           </div>
@@ -192,7 +207,7 @@ export default function BillPage() {
               </div>
               <div className='field'>
                 <label>Status</label>
-                <div className='status-pill'>{status.toUpperCase()}</div>
+                <div className='status-pill'>{`${status === 'delivered' ? 'Delivered' : 'Draft'} · ${paid ? 'Paid' : 'Not Paid Yet'}`}</div>
               </div>
               <div className='field'>
                 <label>Customer Name</label>
@@ -251,7 +266,7 @@ export default function BillPage() {
                   <p>Bill / Delivery receipt</p>
                 </div>
               </div>
-              <div className='status-pill'>{status.toUpperCase()}</div>
+              <div className='status-pill'>{`${status === 'delivered' ? 'Delivered' : 'Draft'} · ${paid ? 'Paid' : 'Not Paid Yet'}`}</div>
             </div>
 
             <div className='invoice-meta'>
@@ -300,26 +315,27 @@ export default function BillPage() {
       <style jsx>{`
         :global(body){margin:0;font-family:Segoe UI,Arial,sans-serif;background:linear-gradient(135deg,#f4f8f4 0%,#eaf4ea 100%);color:#223126}
         .page{max-width:1000px;margin:24px auto;padding:24px}
-        .header{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
+        .editor-layout{display:grid;gap:20px}
+        .header{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap}
         .header h1{margin:0;color:#2e7d32}
-        .header p{margin:6px 0 0;color:#4f6b53}
-        .actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
-        button,a.button{display:inline-flex;align-items:center;justify-content:center;border:none;border-radius:10px;padding:10px 14px;background:#2e7d32;color:#fff;text-decoration:none;cursor:pointer;font-weight:700}
+        .header p{margin:6px 0 0;color:#4f6b53;max-width:580px}
+        .actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:flex-end}
+        button,a.button{display:inline-flex;align-items:center;justify-content:center;border:none;border-radius:10px;padding:10px 14px;background:#2e7d32;color:#fff;text-decoration:none;cursor:pointer;font-weight:700;min-height:40px}
         .button.secondary{background:#f2f7f2;color:#2e7d32;border:1px solid #d7e6da}
         .delete-action{background:#fff;color:#c62828;border:1px solid #f2c7c7}
-        .panel{background:#fff;border-radius:18px;padding:20px;box-shadow:0 18px 40px rgba(26,61,35,.08);margin-top:18px}
-        .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+        .panel{background:#fff;border-radius:18px;padding:24px;box-shadow:0 18px 40px rgba(26,61,35,.08);margin-top:18px}
+        .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;align-items:start}
         .field{display:flex;flex-direction:column;gap:6px;margin-bottom:12px}
         label{font-size:11px;color:#6b7a6f;font-weight:700;letter-spacing:.08em;text-transform:uppercase}
         input{width:100%;padding:11px 12px;border:1px solid #dbe7de;border-radius:10px;background:#fcfdfc;box-sizing:border-box}
         input:focus{outline:none;border-color:#2e7d32}
-        .table-shell{border:1px solid #e8efe9;border-radius:14px;overflow:hidden;background:#fff}
+        .table-shell{border:1px solid #e8efe9;border-radius:14px;overflow:hidden;background:#fff;margin-top:10px}
         table{width:100%;border-collapse:collapse}
-        th,td{padding:10px 10px;border-bottom:1px solid #e8efe9;text-align:left}
+        th,td{padding:12px 12px;border-bottom:1px solid #e8efe9;text-align:left}
         th{background:#f5faf5;color:#2e7d32;font-size:12px;text-transform:uppercase;letter-spacing:.06em}
-        .delete-btn{background:#fff;color:#c62828;border:1px solid #f2c7c7;padding:8px 10px}
-        .total{display:flex;justify-content:flex-end;align-items:center;gap:10px;margin-top:16px;padding:12px 16px;border:1px solid #dce8de;border-radius:12px;background:#f7fbf7;width:fit-content;margin-left:auto;font-weight:700;color:#1b5e20}
-        .status-pill{display:inline-block;padding:6px 10px;border-radius:999px;background:#eef7ed;color:#2e7d32;font-weight:700}
+        .delete-btn{background:#fff;color:#c62828;border:1px solid #f2c7c7;padding:8px 10px;border-radius:10px}
+        .total{display:flex;justify-content:flex-end;align-items:center;gap:10px;margin-top:18px;padding:14px 18px;border:1px solid #dce8de;border-radius:12px;background:#f7fbf7;width:fit-content;margin-left:auto;font-weight:700;color:#1b5e20}
+        .status-pill{display:inline-flex;align-items:center;justify-content:center;padding:8px 14px;border-radius:999px;background:#eef7ed;color:#2e7d32;font-weight:700}
         .print-layout{display:none}
         .invoice-card{background:#fff;border:1px solid #e5eee4;border-radius:24px;padding:28px;box-shadow:none}
         .invoice-header{display:flex;justify-content:space-between;align-items:center;gap:16px;border-bottom:1px solid #e3ece4;padding-bottom:16px;margin-bottom:16px}
@@ -341,7 +357,23 @@ export default function BillPage() {
         .scan-block{text-align:center;min-width:180px}
         .scan-label{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:#2e7d32;font-weight:700;margin-bottom:8px}
         .scan-block img{max-width:180px;width:100%;height:auto;border:1px solid #e6eee7;border-radius:18px;padding:8px;background:#fff;box-sizing:border-box}
-        @media (max-width:700px){.grid{grid-template-columns:1fr}.invoice-meta{grid-template-columns:1fr}.footer-row{flex-direction:column}.print-layout{padding:0}}
+        @media (max-width:900px){
+          .grid{grid-template-columns:1fr}
+          .invoice-meta{grid-template-columns:1fr}
+          .footer-row{flex-direction:column}
+          .actions{justify-content:flex-start}
+          .page{padding:16px}
+          .panel{padding:18px}
+          .print-layout{padding:0}
+        }
+        @media (max-width:700px){
+          .header{align-items:flex-start}
+          .actions{width:100%;justify-content:flex-start}
+          .actions button,.actions a{width:100%}
+          .table-shell{overflow-x:auto}
+          .field.item-section{padding-bottom:0}
+          .total{width:100%;justify-content:space-between}
+        }
         @media print{body{background:#fff}.page{margin:0;padding:0;max-width:none}.editor-layout,.actions button,.actions a,.add-row-btn{display:none!important}.print-layout{display:block!important}.invoice-card{box-shadow:none;border:0;padding:0}.panel,.header{display:none!important}}
       `}</style>
     </>
