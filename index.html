@@ -92,7 +92,7 @@
           <td>${bill.customerName || '—'}</td>
           <td>${bill.date || '—'}</td>
           <td>₹ ${Number(bill.total || 0).toFixed(2)}</td>
-          <td><div class='actions'><a class='link' href='bill.html?fileName=${encodeURIComponent(bill.fileName)}'>Open</a><button class='button secondary' style='background:#fff;color:#c62828;border:1px solid #f2c7c7;margin-left:8px;padding:8px 12px'>Delete</button></div></td>
+          <td><div class='actions'><a class='link' href='bill.html?fileName=${encodeURIComponent(bill.fileName)}'>Open</a><button class='button secondary' style='background:#fff;color:#c62828;border:1px solid #f2c7c7;margin-left:8px;padding:8px 12px' onclick='deleteBill("${encodeURIComponent(bill.fileName)}")'>Delete</button></div></td>
         `;
         tbody.appendChild(tr);
       });

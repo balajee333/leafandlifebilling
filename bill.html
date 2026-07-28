@@ -291,10 +291,6 @@
       });
       const result = await res.json().catch(() => ({}));
       if (!res.ok) {
-        if (res.status === 404) {
-          alert('Unable to save bill: backend API not found at /api/update-bill. Run the local server with `node server.js`, or deploy the API backend together with the app.');
-          return;
-        }
         alert(result.error || 'Unable to save bill.');
         return;
       }
