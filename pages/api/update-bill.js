@@ -1,6 +1,6 @@
-const { saveBill } = require('../../lib/bills');
+const { saveBill } = require('../../lib/bills-mongo');
 
-export default function handler(req, res) {
+export default async function handler(req, res) {
   if (req.method !== 'POST') {
     res.status(405).json({ error: 'Method not allowed' });
     return;

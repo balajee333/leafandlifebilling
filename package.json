@@ -8,6 +8,8 @@
     "build": "next build"
   },
   "dependencies": {
+    "@vercel/functions": "^1.0.0",
+    "mongodb": "^5.9.0",
     "next": "^16.2.12",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"

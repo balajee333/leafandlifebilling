@@ -1,6 +1,6 @@
-const { listBills } = require('../../lib/bills');
+const { listBills } = require('../../lib/bills-mongo');
 
-export default function handler(req, res) {
+export default async function handler(req, res) {
   if (req.method !== 'GET') {
     res.status(405).json({ error: 'Method not allowed' });
     return;
