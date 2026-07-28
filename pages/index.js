@@ -14,12 +14,16 @@ export default function Home() {
     setLoading(true);
     try {
       const res = await fetch('/api/bills');
-      const bills = await res.json();
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data.error || 'Unable to load bills.');
+      }
+      const bills = Array.isArray(data) ? data : [];
       const sorted = bills.slice().sort((a, b) => new Date(b.updatedAt || b.createdAt || 0) - new Date(a.updatedAt || a.createdAt || 0));
       setDrafts(sorted.filter(bill => bill.status === 'draft'));
       setDelivered(sorted.filter(bill => bill.status === 'delivered'));
     } catch (error) {
-      alert('Unable to load bills.');
+      alert(error.message || 'Unable to load bills.');
     } finally {
       setLoading(false);
     }

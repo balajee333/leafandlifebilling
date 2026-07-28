@@ -44,12 +44,12 @@ export default function BillPage() {
     setLoading(true);
     try {
       const res = await fetch(`/api/bill?fileName=${encodeURIComponent(name)}`);
+      const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        alert(err.error || 'Could not load bill.');
+        alert(data.error || 'Could not load bill.');
         return;
       }
-      const bill = await res.json();
+      const bill = data;
       setCurrentFileName(name);
       setBillNumber(bill.billNumber || '---');
       setStatus(bill.status || 'draft');
@@ -152,6 +152,13 @@ export default function BillPage() {
   }
 
   function printBill() {
+    const pdfTitle = `LeafAndLifeBill-${billNumber || '000'}`;
+    const originalTitle = document.title;
+    document.title = pdfTitle;
+    window.onafterprint = () => {
+      document.title = originalTitle;
+      window.onafterprint = null;
+    };
     window.print();
   }
 

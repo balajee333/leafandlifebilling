@@ -6,7 +6,8 @@ export default async function handler(req, res) {
     return;
   }
   try {
-    res.status(200).json(listBills());
+    const bills = await listBills();
+    res.status(200).json(bills);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
