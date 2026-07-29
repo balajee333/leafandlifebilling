@@ -247,7 +247,6 @@ export default function OrderPage() {
 
           <div className='field item-section'>
             <label>Items</label>
-            <button className='button secondary add-row-btn' onClick={addItem} disabled={isDelivered}>+ Add Item</button>
             <div className='table-shell'>
               <table>
                 <thead>
@@ -266,6 +265,7 @@ export default function OrderPage() {
                 </tbody>
               </table>
             </div>
+            <button className='button secondary add-row-btn' onClick={addItem} disabled={isDelivered}>+ Add Item</button>
           </div>
 
           <div className='total'><span>Total</span><span>₹ {total.toFixed(2)}</span></div>
@@ -289,6 +289,7 @@ export default function OrderPage() {
         input{width:100%;padding:11px 12px;border:1px solid #dbe7de;border-radius:10px;background:#fcfdfc;box-sizing:border-box}
         input:focus{outline:none;border-color:#2e7d32}
         .table-shell{border:1px solid #e8efe9;border-radius:14px;overflow:hidden;background:#fff;margin-top:10px}
+        .add-row-btn{margin-top:12px;align-self:flex-start}
         table{width:100%;border-collapse:collapse}
         th,td{padding:12px 12px;border-bottom:1px solid #e8efe9;text-align:left}
         th{background:#f5faf5;color:#2e7d32;font-size:12px;text-transform:uppercase;letter-spacing:.06em}
