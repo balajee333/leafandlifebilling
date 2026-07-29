@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/router';
 
 const today = new Date().toISOString().slice(0, 10);
-const emptyItem = { product: '', qty: 1, price: 0 };
+const emptyItem = { product: '', qty: 1, price: '' };
 
 export default function OrderPage() {
   const router = useRouter();
@@ -76,7 +76,12 @@ export default function OrderPage() {
   }
 
   function updateItem(index, field, value) {
-    setItems(current => current.map((item, idx) => idx === index ? { ...item, [field]: field === 'product' ? value : Number(value) } : item));
+    setItems(current => current.map((item, idx) => {
+      if (idx !== index) return item;
+      if (field === 'product') return { ...item, product: value };
+      if (value === '' || value === null) return { ...item, [field]: '' };
+      return { ...item, [field]: Number(value) };
+    }));
   }
 
   function addItem() {
@@ -257,7 +262,7 @@ export default function OrderPage() {
                     <tr key={index}>
                       <td><input value={item.product} disabled={isDelivered} onChange={e => updateItem(index, 'product', e.target.value)} placeholder='Product' /></td>
                       <td><input type='number' min='0' value={item.qty} disabled={isDelivered} onChange={e => updateItem(index, 'qty', e.target.value)} /></td>
-                      <td><input type='number' step='0.01' min='0' value={item.price} disabled={isDelivered} onChange={e => updateItem(index, 'price', e.target.value)} /></td>
+                      <td><input type='number' step='0.01' min='0' value={item.price === '' || item.price == null ? '' : item.price} disabled={isDelivered} onChange={e => updateItem(index, 'price', e.target.value)} /></td>
                       <td>₹ {(Number(item.qty || 0) * Number(item.price || 0)).toFixed(2)}</td>
                       <td><button className='delete-btn' type='button' disabled={isDelivered} onClick={() => removeItem(index)}>Delete</button></td>
                     </tr>
@@ -279,7 +284,7 @@ export default function OrderPage() {
         .header h1{margin:0;color:#2e7d32}
         .header p{margin:6px 0 0;color:#4f6b53;max-width:580px}
         .actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:flex-end}
-        button,a.button{display:inline-flex;align-items:center;justify-content:center;border:none;border-radius:10px;padding:10px 14px;background:#2e7d32;color:#fff;text-decoration:none;cursor:pointer;font-weight:700;min-height:40px}
+        button,a.button{display:inline-flex;align-items:center;justify-content:center;border:none;border-radius:10px;padding:10px 14px;background:#2e7d32;color:#fff;text-decoration:none;cursor:pointer;font-weight:700;min-height:40px;font-size:15px;line-height:1.3}
         .button.secondary{background:#f2f7f2;color:#2e7d32;border:1px solid #d7e6da}
         .delete-action{background:#fff;color:#c62828;border:1px solid #f2c7c7}
         .panel{background:#fff;border-radius:18px;padding:24px;box-shadow:0 18px 40px rgba(26,61,35,.08);margin-top:18px}
@@ -305,8 +310,9 @@ export default function OrderPage() {
         }
         @media (max-width:700px){
           .header{align-items:flex-start;flex-direction:column}
-          .actions{width:100%;justify-content:flex-start}
-          .actions button,.actions a{width:100%;box-sizing:border-box}
+          .actions{width:100%;justify-content:flex-start;gap:8px}
+          .actions button,.actions a.button{width:100%;box-sizing:border-box;font-size:16px;padding:12px 16px;min-height:48px;line-height:1.35}
+          .add-row-btn{font-size:16px;padding:12px 16px;min-height:48px}
           .table-shell{overflow-x:auto;-webkit-overflow-scrolling:touch}
           .table-shell table{min-width:520px}
           .total{width:100%;justify-content:space-between;box-sizing:border-box}

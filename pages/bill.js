@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/router';
 
 const today = new Date().toISOString().slice(0, 10);
-const emptyItem = { product: '', qty: 1, price: 0 };
+const emptyItem = { product: '', qty: 1, price: '' };
 
 export default function BillPage() {
   const router = useRouter();
@@ -74,7 +74,12 @@ export default function BillPage() {
   }
 
   function updateItem(index, field, value) {
-    setItems(current => current.map((item, idx) => idx === index ? { ...item, [field]: field === 'product' ? value : Number(value) } : item));
+    setItems(current => current.map((item, idx) => {
+      if (idx !== index) return item;
+      if (field === 'product') return { ...item, product: value };
+      if (value === '' || value === null) return { ...item, [field]: '' };
+      return { ...item, [field]: Number(value) };
+    }));
   }
 
   function addItem() {
@@ -256,7 +261,7 @@ export default function BillPage() {
                       <tr key={index}>
                         <td><input value={item.product} disabled={isDelivered} onChange={e => updateItem(index, 'product', e.target.value)} placeholder='Product' /></td>
                         <td><input type='number' min='0' value={item.qty} disabled={isDelivered} onChange={e => updateItem(index, 'qty', e.target.value)} /></td>
-                        <td><input type='number' step='0.01' min='0' value={item.price} disabled={isDelivered} onChange={e => updateItem(index, 'price', e.target.value)} /></td>
+                        <td><input type='number' step='0.01' min='0' value={item.price === '' || item.price == null ? '' : item.price} disabled={isDelivered} onChange={e => updateItem(index, 'price', e.target.value)} /></td>
                         <td>₹ {(Number(item.qty || 0) * Number(item.price || 0)).toFixed(2)}</td>
                         <td><button className='delete-btn' type='button' disabled={isDelivered} onClick={() => removeItem(index)}>🗑</button></td>
                       </tr>
@@ -343,7 +348,7 @@ export default function BillPage() {
         .header h1{margin:0;color:#2e7d32}
         .header p{margin:6px 0 0;color:#4f6b53;max-width:580px}
         .actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:flex-end}
-        button,a.button{display:inline-flex;align-items:center;justify-content:center;border:none;border-radius:10px;padding:10px 14px;background:#2e7d32;color:#fff;text-decoration:none;cursor:pointer;font-weight:700;min-height:40px}
+        button,a.button{display:inline-flex;align-items:center;justify-content:center;border:none;border-radius:10px;padding:10px 14px;background:#2e7d32;color:#fff;text-decoration:none;cursor:pointer;font-weight:700;min-height:40px;font-size:15px;line-height:1.3}
         .button.secondary{background:#f2f7f2;color:#2e7d32;border:1px solid #d7e6da}
         .delete-action{background:#fff;color:#c62828;border:1px solid #f2c7c7}
         .panel{background:#fff;border-radius:18px;padding:24px;box-shadow:0 18px 40px rgba(26,61,35,.08);margin-top:18px}
@@ -376,32 +381,46 @@ export default function BillPage() {
         .print-table th,.print-table td{padding:10px;border-bottom:1px solid #e8efe9;text-align:left}
         .print-table th{background:#f5faf5;color:#2e7d32;font-size:12px;text-transform:uppercase;letter-spacing:.06em}
         .print-total{display:flex;justify-content:flex-end;align-items:center;gap:10px;margin-top:16px;padding:12px 16px;border:1px solid #dce8de;border-radius:12px;background:#f7fbf7;width:fit-content;margin-left:auto;font-weight:700;color:#1b5e20}
-        .footer-row{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-top:20px;padding-top:16px;border-top:1px solid #e3ece4}
-        .contact-block{font-size:13px;line-height:1.6;color:#4f6b53}
-        .scan-block{text-align:center;min-width:180px}
-        .scan-label{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:#2e7d32;font-weight:700;margin-bottom:8px}
-        .scan-block img{max-width:180px;width:100%;height:auto;border:1px solid #e6eee7;border-radius:18px;padding:8px;background:#fff;box-sizing:border-box}
-        @media (max-width:900px){
+        .footer-row{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-top:20px;padding-top:16px;border-top:1px solid #e3ece4;width:100%}
+        .contact-block{font-size:13px;line-height:1.6;color:#4f6b53;flex:1;min-width:0}
+        .scan-block{display:flex;flex-direction:column;align-items:center;text-align:center;margin-left:auto;flex:0 0 auto;width:180px}
+        .scan-label{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:#2e7d32;font-weight:700;margin-bottom:8px;width:100%;text-align:center}
+        .scan-block img{display:block;width:180px;max-width:180px;height:auto;border:1px solid #e6eee7;border-radius:18px;padding:8px;background:#fff;box-sizing:border-box}
+        @media screen and (max-width:900px){
           .grid{grid-template-columns:1fr}
           .invoice-meta{grid-template-columns:1fr}
           .footer-row{flex-direction:column}
+          .scan-block{margin-left:0;align-self:flex-start}
           .actions{justify-content:flex-start}
           .page{margin:0 auto;padding:16px}
           .panel{padding:18px;margin-top:14px}
           .print-layout{padding:0}
           .status-pill{justify-content:flex-start;text-align:left;width:fit-content;max-width:100%;white-space:normal}
         }
-        @media (max-width:700px){
+        @media screen and (max-width:700px){
           .header{align-items:flex-start;flex-direction:column}
-          .actions{width:100%;justify-content:flex-start}
-          .actions button,.actions a{width:100%;box-sizing:border-box}
+          .actions{width:100%;justify-content:flex-start;gap:8px}
+          .actions button,.actions a.button{width:100%;box-sizing:border-box;font-size:16px;padding:12px 16px;min-height:48px;line-height:1.35}
+          .add-row-btn{font-size:16px;padding:12px 16px;min-height:48px}
           .table-shell{overflow-x:auto;-webkit-overflow-scrolling:touch}
           .table-shell table{min-width:520px}
           .field.item-section{padding-bottom:0}
           .total{width:100%;justify-content:space-between;box-sizing:border-box}
           input{font-size:16px}
         }
-        @media print{body{background:#fff}.page{margin:0;padding:0;max-width:none}.editor-layout,.actions button,.actions a,.add-row-btn{display:none!important}.print-layout{display:block!important}.invoice-card{box-shadow:none;border:0;padding:0}.panel,.header{display:none!important}}
+        @media print{
+          :global(body){background:#fff}
+          .page{margin:0;padding:0;max-width:none}
+          .editor-layout,.actions button,.actions a,.add-row-btn{display:none!important}
+          .print-layout{display:block!important}
+          .invoice-card{box-shadow:none;border:0;padding:0}
+          .panel,.header{display:none!important}
+          .footer-row{display:flex!important;flex-direction:row!important;justify-content:space-between!important;align-items:flex-start!important;width:100%!important}
+          .contact-block{flex:1 1 auto}
+          .scan-block{display:flex!important;flex-direction:column!important;align-items:center!important;margin-left:auto!important;margin-right:0!important;width:180px!important;flex:0 0 180px!important}
+          .scan-label{text-align:center!important;width:100%!important}
+          .scan-block img{width:160px!important;max-width:160px!important}
+        }
       `}</style>
     </>
   );
