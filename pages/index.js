@@ -144,7 +144,9 @@ export default function Home() {
       <div className='page'>
         <header className='header'>
           <div className='brand'>
-            <img src='/logo.png' alt='Leaf & Life logo' />
+            <a className='brand-link' href='/' aria-label='Go to home'>
+              <img src='/logo.png' alt='Leaf & Life logo' />
+            </a>
             <div className='brand-title'>
               <h1>Leaf & Life</h1>
               <p>Orders and bills, sorted by most recent activity.</p>
@@ -325,7 +327,8 @@ export default function Home() {
         .page{max-width:1100px;margin:24px auto;padding:24px}
         .header{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px}
         .brand{display:flex;align-items:center;gap:12px}
-        .brand img{width:52px;height:52px;object-fit:contain}
+        .brand-link{display:inline-flex;flex-shrink:0;line-height:0}
+        .brand img{width:52px;height:52px;object-fit:contain;display:block}
         .brand-title h1{margin:0;color:#2e7d32}
         .brand-title p{margin:4px 0 0;color:#4f6b53}
         .top-actions{display:flex;gap:10px;flex-wrap:wrap}

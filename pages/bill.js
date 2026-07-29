@@ -195,9 +195,14 @@ export default function BillPage() {
       <div className='page'>
         <div className='editor-layout'>
           <div className='header'>
-            <div>
-              <h1>Bill Editor</h1>
-              <p>Create, save, and deliver bills. Drafts remain editable; delivered bills are locked.</p>
+            <div className='header-main'>
+              <a className='brand-link' href='/' aria-label='Go to home'>
+                <img className='header-logo' src='/logo.png' alt='Leaf & Life logo' />
+              </a>
+              <div>
+                <h1>Bill Editor</h1>
+                <p>Create, save, and deliver bills. Drafts remain editable; delivered bills are locked.</p>
+              </div>
             </div>
             <div className='actions'>
               <a className='button secondary' href='/?tab=bills'>Back to Bills</a>
@@ -345,6 +350,9 @@ export default function BillPage() {
         .page{max-width:1000px;margin:24px auto;padding:24px}
         .editor-layout{display:grid;gap:20px}
         .header{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap}
+        .header-main{display:flex;align-items:center;gap:12px;min-width:0}
+        .brand-link{display:inline-flex;flex-shrink:0;line-height:0}
+        .header-logo{width:52px;height:52px;object-fit:contain;display:block}
         .header h1{margin:0;color:#2e7d32}
         .header p{margin:6px 0 0;color:#4f6b53;max-width:580px}
         .actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:flex-end}

@@ -194,9 +194,14 @@ export default function OrderPage() {
 
       <div className='page'>
         <div className='header'>
-          <div>
-            <h1>Order Editor</h1>
-            <p>Create orders for flat deliveries. Saving creates a linked draft bill automatically.</p>
+          <div className='header-main'>
+            <a className='brand-link' href='/' aria-label='Go to home'>
+              <img className='header-logo' src='/logo.png' alt='Leaf & Life logo' />
+            </a>
+            <div>
+              <h1>Order Editor</h1>
+              <p>Create orders for flat deliveries. Saving creates a linked draft bill automatically.</p>
+            </div>
           </div>
           <div className='actions'>
             <a className='button secondary' href='/?tab=orders'>Back to Orders</a>
@@ -281,6 +286,9 @@ export default function OrderPage() {
         :global(body){margin:0;font-family:Segoe UI,Arial,sans-serif;background:linear-gradient(135deg,#f4f8f4 0%,#eaf4ea 100%);color:#223126}
         .page{max-width:1000px;margin:24px auto;padding:24px}
         .header{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap}
+        .header-main{display:flex;align-items:center;gap:12px;min-width:0}
+        .brand-link{display:inline-flex;flex-shrink:0;line-height:0}
+        .header-logo{width:52px;height:52px;object-fit:contain;display:block}
         .header h1{margin:0;color:#2e7d32}
         .header p{margin:6px 0 0;color:#4f6b53;max-width:580px}
         .actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:flex-end}
