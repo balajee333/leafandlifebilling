@@ -82,6 +82,7 @@ export default function BillPage() {
   }
 
   function removeItem(index) {
+    if (!confirm('Remove this item from the bill?')) return;
     setItems(current => {
       const next = current.filter((_, idx) => idx !== index);
       return next.length ? next : [emptyItem];
@@ -155,7 +156,7 @@ export default function BillPage() {
       alert('No bill selected to delete.');
       return;
     }
-    if (!confirm('Delete this bill? This cannot be undone.')) return;
+    if (!confirm('Warning: Delete this bill permanently?\n\nThis cannot be undone.')) return;
     const res = await fetch('/api/delete-bill', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

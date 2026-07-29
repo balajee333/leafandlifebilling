@@ -11,6 +11,8 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('all');
   const [paidFilter, setPaidFilter] = useState('all');
+  const [billStatusFilter, setBillStatusFilter] = useState('all');
+  const [billPaidFilter, setBillPaidFilter] = useState('all');
 
   useEffect(() => {
     loadAll();
@@ -58,7 +60,7 @@ export default function Home() {
   }
 
   async function deleteBill(fileName) {
-    if (!confirm('Delete this bill? This cannot be undone.')) return;
+    if (!confirm('Warning: Delete this bill permanently?\n\nThis cannot be undone.')) return;
     try {
       const res = await fetch('/api/delete-bill', {
         method: 'POST',
@@ -77,7 +79,7 @@ export default function Home() {
   }
 
   async function deleteOrder(fileName) {
-    if (!confirm('Delete this order? Linked draft bill will also be deleted.')) return;
+    if (!confirm('Warning: Delete this order permanently?\n\nThe linked draft bill will also be deleted. This cannot be undone.')) return;
     try {
       const res = await fetch('/api/delete-order', {
         method: 'POST',
@@ -115,6 +117,25 @@ export default function Home() {
       return true;
     });
   }, [orders, statusFilter, paidFilter]);
+
+  function matchesPaidFilter(item, filter) {
+    if (filter === 'paid' && !item.paid) return false;
+    if (filter === 'unpaid' && item.paid) return false;
+    return true;
+  }
+
+  const filteredDrafts = useMemo(
+    () => drafts.filter(bill => matchesPaidFilter(bill, billPaidFilter)),
+    [drafts, billPaidFilter]
+  );
+
+  const filteredDelivered = useMemo(
+    () => delivered.filter(bill => matchesPaidFilter(bill, billPaidFilter)),
+    [delivered, billPaidFilter]
+  );
+
+  const showDraftBills = billStatusFilter === 'all' || billStatusFilter === 'draft';
+  const showDeliveredBills = billStatusFilter === 'all' || billStatusFilter === 'delivered';
 
   return (
     <>
@@ -223,6 +244,31 @@ export default function Home() {
           </section>
         ) : (
           <div className='grid'>
+            <section className='panel filters-panel'>
+              <div className='panel-header'>
+                <h2>Bills</h2>
+                <div className='filters'>
+                  <label className='filter'>
+                    <span>Status</span>
+                    <select value={billStatusFilter} onChange={e => setBillStatusFilter(e.target.value)}>
+                      <option value='all'>All</option>
+                      <option value='draft'>Draft</option>
+                      <option value='delivered'>Delivered</option>
+                    </select>
+                  </label>
+                  <label className='filter'>
+                    <span>Paid</span>
+                    <select value={billPaidFilter} onChange={e => setBillPaidFilter(e.target.value)}>
+                      <option value='all'>All</option>
+                      <option value='paid'>Paid</option>
+                      <option value='unpaid'>Not Paid</option>
+                    </select>
+                  </label>
+                </div>
+              </div>
+            </section>
+
+            {showDraftBills && (
             <section className='panel'>
               <h2>Draft Bills</h2>
               <div className='table-scroll'>
@@ -235,7 +281,9 @@ export default function Home() {
                     <tr><td colSpan='6' className='empty'>Loading bills…</td></tr>
                   ) : drafts.length === 0 ? (
                     <tr><td colSpan='6' className='empty'>No draft bills yet.</td></tr>
-                  ) : drafts.map(bill => (
+                  ) : filteredDrafts.length === 0 ? (
+                    <tr><td colSpan='6' className='empty'>No draft bills match the selected filters.</td></tr>
+                  ) : filteredDrafts.map(bill => (
                     <tr key={bill.fileName}>
                       <td>{bill.billNumber}</td>
                       <td>{customerCell(bill)}</td>
@@ -254,7 +302,9 @@ export default function Home() {
               </table>
               </div>
             </section>
+            )}
 
+            {showDeliveredBills && (
             <section className='panel'>
               <h2>Delivered Bills</h2>
               <div className='table-scroll'>
@@ -267,7 +317,9 @@ export default function Home() {
                     <tr><td colSpan='6' className='empty'>Loading bills…</td></tr>
                   ) : delivered.length === 0 ? (
                     <tr><td colSpan='6' className='empty'>No delivered bills yet.</td></tr>
-                  ) : delivered.map(bill => (
+                  ) : filteredDelivered.length === 0 ? (
+                    <tr><td colSpan='6' className='empty'>No delivered bills match the selected filters.</td></tr>
+                  ) : filteredDelivered.map(bill => (
                     <tr key={bill.fileName}>
                       <td>{bill.billNumber}</td>
                       <td>{customerCell(bill)}</td>
@@ -286,6 +338,7 @@ export default function Home() {
               </table>
               </div>
             </section>
+            )}
           </div>
         )}
       </div>
@@ -309,6 +362,7 @@ export default function Home() {
         .panel h2{margin:0 0 12px;font-size:18px;color:#2e7d32}
         .panel-header{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px}
         .panel-header h2{margin:0}
+        .filters-panel .panel-header{margin-bottom:0}
         .filters{display:flex;gap:12px;flex-wrap:wrap}
         .filter{display:flex;flex-direction:column;gap:4px;font-size:11px;color:#6b7a6f;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
         .filter select{min-width:150px;padding:8px 10px;border:1px solid #dbe7de;border-radius:10px;background:#fcfdfc;color:#223126;font-weight:600;text-transform:none;letter-spacing:0;font-size:13px}

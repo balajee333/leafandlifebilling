@@ -84,6 +84,7 @@ export default function OrderPage() {
   }
 
   function removeItem(index) {
+    if (!confirm('Remove this item from the order?')) return;
     setItems(current => {
       const next = current.filter((_, idx) => idx !== index);
       return next.length ? next : [emptyItem];
@@ -166,7 +167,7 @@ export default function OrderPage() {
       alert('No order selected to delete.');
       return;
     }
-    if (!confirm('Delete this order? The linked draft bill will also be deleted.')) return;
+    if (!confirm('Warning: Delete this order permanently?\n\nThe linked draft bill will also be deleted. This cannot be undone.')) return;
     const res = await fetch('/api/delete-order', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
