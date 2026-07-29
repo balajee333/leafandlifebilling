@@ -15,6 +15,8 @@ export default function BillPage() {
   const [paid, setPaid] = useState(false);
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
+  const [flatName, setFlatName] = useState('');
+  const [flatNumber, setFlatNumber] = useState('');
   const [date, setDate] = useState(today);
   const [items, setItems] = useState([emptyItem]);
   const [loading, setLoading] = useState(false);
@@ -38,6 +40,8 @@ export default function BillPage() {
     setPaid(false);
     setCustomerName('');
     setCustomerPhone('');
+    setFlatName('');
+    setFlatNumber('');
     setDate(today);
     setItems([emptyItem]);
   }
@@ -58,6 +62,8 @@ export default function BillPage() {
       setPaid(bill.paid ?? false);
       setCustomerName(bill.customerName || '');
       setCustomerPhone(bill.customerPhone || '');
+      setFlatName(bill.flatName || '');
+      setFlatNumber(bill.flatNumber || '');
       setDate(bill.date || today);
       setItems(Array.isArray(bill.items) && bill.items.length ? bill.items : [emptyItem]);
     } catch (error) {
@@ -88,6 +94,8 @@ export default function BillPage() {
       billNumber: billNumber === '---' ? null : billNumber,
       customerName: customerName.trim(),
       customerPhone: customerPhone.trim(),
+      flatName: flatName.trim(),
+      flatNumber: flatNumber.trim(),
       date,
       items: items.map(item => ({
         product: item.product.trim(),
@@ -218,6 +226,14 @@ export default function BillPage() {
                 <input type='tel' value={customerPhone} onChange={e => setCustomerPhone(e.target.value)} disabled={isDelivered} placeholder='Phone number' />
               </div>
               <div className='field'>
+                <label>Flat Name</label>
+                <input value={flatName} onChange={e => setFlatName(e.target.value)} disabled={isDelivered} placeholder='Flat / apartment name (optional)' />
+              </div>
+              <div className='field'>
+                <label>Flat Number</label>
+                <input value={flatNumber} onChange={e => setFlatNumber(e.target.value)} disabled={isDelivered} placeholder='Flat number (optional)' />
+              </div>
+              <div className='field'>
                 <label>Date</label>
                 <input type='date' value={date} onChange={e => setDate(e.target.value)} disabled={isDelivered} />
               </div>
@@ -274,6 +290,12 @@ export default function BillPage() {
               <div className='meta-box'><div className='meta-label'>Date</div><div className='meta-value'>{date}</div></div>
               <div className='meta-box'><div className='meta-label'>Customer</div><div className='meta-value'>{customerName || '—'}</div></div>
               <div className='meta-box'><div className='meta-label'>Phone</div><div className='meta-value'>{customerPhone || '—'}</div></div>
+              {(flatName || flatNumber) && (
+                <>
+                  <div className='meta-box'><div className='meta-label'>Flat Name</div><div className='meta-value'>{flatName || '—'}</div></div>
+                  <div className='meta-box'><div className='meta-label'>Flat Number</div><div className='meta-value'>{flatNumber || '—'}</div></div>
+                </>
+              )}
             </div>
 
             <table className='print-table'>
