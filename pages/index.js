@@ -124,18 +124,16 @@ export default function Home() {
     return true;
   }
 
-  const filteredDrafts = useMemo(
-    () => drafts.filter(bill => matchesPaidFilter(bill, billPaidFilter)),
-    [drafts, billPaidFilter]
-  );
-
-  const filteredDelivered = useMemo(
-    () => delivered.filter(bill => matchesPaidFilter(bill, billPaidFilter)),
-    [delivered, billPaidFilter]
-  );
-
-  const showDraftBills = billStatusFilter === 'all' || billStatusFilter === 'draft';
-  const showDeliveredBills = billStatusFilter === 'all' || billStatusFilter === 'delivered';
+  const filteredBills = useMemo(() => {
+    const all = [...drafts, ...delivered].sort(
+      (a, b) => new Date(b.updatedAt || b.createdAt || 0) - new Date(a.updatedAt || a.createdAt || 0)
+    );
+    return all.filter(bill => {
+      if (billStatusFilter === 'delivered' && bill.status !== 'delivered') return false;
+      if (billStatusFilter === 'draft' && bill.status === 'delivered') return false;
+      return matchesPaidFilter(bill, billPaidFilter);
+    });
+  }, [drafts, delivered, billStatusFilter, billPaidFilter]);
 
   return (
     <>
@@ -214,7 +212,11 @@ export default function Home() {
                   <tr><td colSpan='9' className='empty'>No orders match the selected filters.</td></tr>
                 ) : filteredOrders.map(order => (
                   <tr key={order.fileName}>
-                    <td>{order.orderNumber || '—'}</td>
+                    <td>
+                      <a className='number-link' href={`/order?fileName=${encodeURIComponent(order.fileName)}`}>
+                        {order.orderNumber || '—'}
+                      </a>
+                    </td>
                     <td>{order.customerName || '—'}</td>
                     <td>{order.flatName || '—'}</td>
                     <td>{order.flatNumber || '—'}</td>
@@ -232,7 +234,6 @@ export default function Home() {
                     </td>
                     <td>
                       <div className='actions'>
-                        <a className='link' href={`/order?fileName=${encodeURIComponent(order.fileName)}`}>Open</a>
                         <button className='button secondary' onClick={() => deleteOrder(order.fileName)}>Delete</button>
                       </div>
                     </td>
@@ -243,56 +244,70 @@ export default function Home() {
             </div>
           </section>
         ) : (
-          <div className='grid'>
-            <section className='panel filters-panel'>
-              <div className='panel-header'>
-                <h2>Bills</h2>
-                <div className='filters'>
-                  <label className='filter'>
-                    <span>Status</span>
-                    <select value={billStatusFilter} onChange={e => setBillStatusFilter(e.target.value)}>
-                      <option value='all'>All</option>
-                      <option value='draft'>Draft</option>
-                      <option value='delivered'>Delivered</option>
-                    </select>
-                  </label>
-                  <label className='filter'>
-                    <span>Paid</span>
-                    <select value={billPaidFilter} onChange={e => setBillPaidFilter(e.target.value)}>
-                      <option value='all'>All</option>
-                      <option value='paid'>Paid</option>
-                      <option value='unpaid'>Not Paid</option>
-                    </select>
-                  </label>
-                </div>
+          <section className='panel'>
+            <div className='panel-header'>
+              <h2>Bills</h2>
+              <div className='filters'>
+                <label className='filter'>
+                  <span>Status</span>
+                  <select value={billStatusFilter} onChange={e => setBillStatusFilter(e.target.value)}>
+                    <option value='all'>All</option>
+                    <option value='draft'>Draft</option>
+                    <option value='delivered'>Delivered</option>
+                  </select>
+                </label>
+                <label className='filter'>
+                  <span>Paid</span>
+                  <select value={billPaidFilter} onChange={e => setBillPaidFilter(e.target.value)}>
+                    <option value='all'>All</option>
+                    <option value='paid'>Paid</option>
+                    <option value='unpaid'>Not Paid</option>
+                  </select>
+                </label>
               </div>
-            </section>
-
-            {showDraftBills && (
-            <section className='panel'>
-              <h2>Draft Bills</h2>
-              <div className='table-scroll'>
+            </div>
+            <div className='table-scroll'>
               <table>
                 <thead>
-                  <tr><th>Bill #</th><th>Customer</th><th>Date</th><th>Total</th><th>Paid</th><th>Action</th></tr>
+                  <tr>
+                    <th>Bill #</th>
+                    <th>Customer</th>
+                    <th>Date</th>
+                    <th>Total</th>
+                    <th>Status</th>
+                    <th>Paid</th>
+                    <th>Action</th>
+                  </tr>
                 </thead>
                 <tbody>
                   {loading ? (
-                    <tr><td colSpan='6' className='empty'>Loading bills…</td></tr>
-                  ) : drafts.length === 0 ? (
-                    <tr><td colSpan='6' className='empty'>No draft bills yet.</td></tr>
-                  ) : filteredDrafts.length === 0 ? (
-                    <tr><td colSpan='6' className='empty'>No draft bills match the selected filters.</td></tr>
-                  ) : filteredDrafts.map(bill => (
+                    <tr><td colSpan='7' className='empty'>Loading bills…</td></tr>
+                  ) : drafts.length + delivered.length === 0 ? (
+                    <tr><td colSpan='7' className='empty'>No bills yet.</td></tr>
+                  ) : filteredBills.length === 0 ? (
+                    <tr><td colSpan='7' className='empty'>No bills match the selected filters.</td></tr>
+                  ) : filteredBills.map(bill => (
                     <tr key={bill.fileName}>
-                      <td>{bill.billNumber}</td>
+                      <td>
+                        <a className='number-link' href={`/bill?fileName=${encodeURIComponent(bill.fileName)}`}>
+                          {bill.billNumber || '—'}
+                        </a>
+                      </td>
                       <td>{customerCell(bill)}</td>
                       <td>{bill.date || '—'}</td>
                       <td>₹ {Number(bill.total || 0).toFixed(2)}</td>
-                      <td><span className={`badge ${bill.paid ? 'paid' : 'unpaid'}`}>{bill.paid ? 'Paid' : 'Not Paid'}</span></td>
+                      <td>
+                        <span className={`badge ${bill.status === 'delivered' ? 'delivered' : 'draft'}`}>
+                          {bill.status === 'delivered' ? 'Delivered' : 'Draft'}
+                        </span>
+                      </td>
+                      <td>
+                        <span className={`badge ${bill.paid ? 'paid' : 'unpaid'}`}>
+                          {bill.paid ? 'Paid' : 'Not Paid'}
+                        </span>
+                      </td>
                       <td>
                         <div className='actions'>
-                          <a className='link' href={`/bill?fileName=${encodeURIComponent(bill.fileName)}`}>Open</a>
                           <button className='button secondary' onClick={() => deleteBill(bill.fileName)}>Delete</button>
                         </div>
                       </td>
@@ -300,46 +315,8 @@ export default function Home() {
                   ))}
                 </tbody>
               </table>
-              </div>
-            </section>
-            )}
-
-            {showDeliveredBills && (
-            <section className='panel'>
-              <h2>Delivered Bills</h2>
-              <div className='table-scroll'>
-              <table>
-                <thead>
-                  <tr><th>Bill #</th><th>Customer</th><th>Date</th><th>Total</th><th>Paid</th><th>Action</th></tr>
-                </thead>
-                <tbody>
-                  {loading ? (
-                    <tr><td colSpan='6' className='empty'>Loading bills…</td></tr>
-                  ) : delivered.length === 0 ? (
-                    <tr><td colSpan='6' className='empty'>No delivered bills yet.</td></tr>
-                  ) : filteredDelivered.length === 0 ? (
-                    <tr><td colSpan='6' className='empty'>No delivered bills match the selected filters.</td></tr>
-                  ) : filteredDelivered.map(bill => (
-                    <tr key={bill.fileName}>
-                      <td>{bill.billNumber}</td>
-                      <td>{customerCell(bill)}</td>
-                      <td>{bill.date || '—'}</td>
-                      <td>₹ {Number(bill.total || 0).toFixed(2)}</td>
-                      <td><span className={`badge ${bill.paid ? 'paid' : 'unpaid'}`}>{bill.paid ? 'Paid' : 'Not Paid'}</span></td>
-                      <td>
-                        <div className='actions'>
-                          <a className='link' href={`/bill?fileName=${encodeURIComponent(bill.fileName)}`}>Open</a>
-                          <button className='button secondary' onClick={() => deleteBill(bill.fileName)}>Delete</button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              </div>
-            </section>
-            )}
-          </div>
+            </div>
+          </section>
         )}
       </div>
 
@@ -362,7 +339,6 @@ export default function Home() {
         .panel h2{margin:0 0 12px;font-size:18px;color:#2e7d32}
         .panel-header{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px}
         .panel-header h2{margin:0}
-        .filters-panel .panel-header{margin-bottom:0}
         .filters{display:flex;gap:12px;flex-wrap:wrap}
         .filter{display:flex;flex-direction:column;gap:4px;font-size:11px;color:#6b7a6f;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
         .filter select{min-width:150px;padding:8px 10px;border:1px solid #dbe7de;border-radius:10px;background:#fcfdfc;color:#223126;font-weight:600;text-transform:none;letter-spacing:0;font-size:13px}
@@ -371,8 +347,9 @@ export default function Home() {
         th{background:#f5faf5;color:#2e7d32;font-size:12px;text-transform:uppercase;letter-spacing:.06em}
         .empty{color:#6b7a6f;font-style:italic}
         .actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-        .actions .link{display:inline-flex;align-items:center;justify-content:center;min-height:36px;padding:8px 10px;border-radius:10px;text-decoration:none;color:#2e7d32;font-weight:700}
         .actions button{min-height:36px}
+        .number-link{color:#2e7d32;font-weight:700;text-decoration:underline;text-underline-offset:2px}
+        .number-link:hover{color:#1b5e20}
         .badge{display:inline-flex;align-items:center;justify-content:center;padding:6px 10px;border-radius:999px;font-size:12px;font-weight:700}
         .badge.paid,.badge.delivered{background:#2e7d32;color:#fff}
         .badge.unpaid,.badge.draft{background:#f2f7f2;color:#2e7d32;border:1px solid #d7e6da}
