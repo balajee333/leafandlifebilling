@@ -166,7 +166,7 @@ export default function BillPage() {
       alert('Could not delete bill: ' + (err.error || 'Unknown error'));
       return;
     }
-    router.push('/');
+    router.push('/?tab=bills');
   }
 
   function printBill() {
@@ -194,7 +194,7 @@ export default function BillPage() {
               <p>Create, save, and deliver bills. Drafts remain editable; delivered bills are locked.</p>
             </div>
             <div className='actions'>
-              <a className='button secondary' href='/'>Back to Bills</a>
+              <a className='button secondary' href='/?tab=bills'>Back to Bills</a>
               <button className='button secondary delete-action' onClick={deleteCurrentBill}>Delete Bill</button>
               {!isDelivered && <button className='button secondary' onClick={saveDraft}>Save Draft</button>}
               {!isDelivered && <button className='button' onClick={markDelivered}>Mark as Delivered</button>}
@@ -384,17 +384,20 @@ export default function BillPage() {
           .invoice-meta{grid-template-columns:1fr}
           .footer-row{flex-direction:column}
           .actions{justify-content:flex-start}
-          .page{padding:16px}
-          .panel{padding:18px}
+          .page{margin:0 auto;padding:16px}
+          .panel{padding:18px;margin-top:14px}
           .print-layout{padding:0}
+          .status-pill{justify-content:flex-start;text-align:left;width:fit-content;max-width:100%;white-space:normal}
         }
         @media (max-width:700px){
-          .header{align-items:flex-start}
+          .header{align-items:flex-start;flex-direction:column}
           .actions{width:100%;justify-content:flex-start}
-          .actions button,.actions a{width:100%}
-          .table-shell{overflow-x:auto}
+          .actions button,.actions a{width:100%;box-sizing:border-box}
+          .table-shell{overflow-x:auto;-webkit-overflow-scrolling:touch}
+          .table-shell table{min-width:520px}
           .field.item-section{padding-bottom:0}
-          .total{width:100%;justify-content:space-between}
+          .total{width:100%;justify-content:space-between;box-sizing:border-box}
+          input{font-size:16px}
         }
         @media print{body{background:#fff}.page{margin:0;padding:0;max-width:none}.editor-layout,.actions button,.actions a,.add-row-btn{display:none!important}.print-layout{display:block!important}.invoice-card{box-shadow:none;border:0;padding:0}.panel,.header{display:none!important}}
       `}</style>

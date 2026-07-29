@@ -1,16 +1,35 @@
 import Head from 'next/head';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { useRouter } from 'next/router';
 
 export default function Home() {
+  const router = useRouter();
   const [tab, setTab] = useState('orders');
   const [orders, setOrders] = useState([]);
   const [drafts, setDrafts] = useState([]);
   const [delivered, setDelivered] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [paidFilter, setPaidFilter] = useState('all');
 
   useEffect(() => {
     loadAll();
   }, []);
+
+  useEffect(() => {
+    if (!router.isReady) return;
+    const nextTab = router.query.tab === 'bills' ? 'bills' : 'orders';
+    setTab(nextTab);
+  }, [router.isReady, router.query.tab]);
+
+  function selectTab(nextTab) {
+    setTab(nextTab);
+    router.replace(
+      { pathname: '/', query: nextTab === 'orders' ? {} : { tab: nextTab } },
+      undefined,
+      { shallow: true }
+    );
+  }
 
   async function loadAll() {
     setLoading(true);
@@ -87,6 +106,16 @@ export default function Home() {
     );
   }
 
+  const filteredOrders = useMemo(() => {
+    return orders.filter(order => {
+      if (statusFilter === 'delivered' && order.status !== 'delivered') return false;
+      if (statusFilter === 'draft' && order.status === 'delivered') return false;
+      if (paidFilter === 'paid' && !order.paid) return false;
+      if (paidFilter === 'unpaid' && order.paid) return false;
+      return true;
+    });
+  }, [orders, statusFilter, paidFilter]);
+
   return (
     <>
       <Head>
@@ -113,13 +142,34 @@ export default function Home() {
         </header>
 
         <div className='tabs'>
-          <button className={tab === 'orders' ? 'tab active' : 'tab'} onClick={() => setTab('orders')}>Orders</button>
-          <button className={tab === 'bills' ? 'tab active' : 'tab'} onClick={() => setTab('bills')}>Bills</button>
+          <button className={tab === 'orders' ? 'tab active' : 'tab'} onClick={() => selectTab('orders')}>Orders</button>
+          <button className={tab === 'bills' ? 'tab active' : 'tab'} onClick={() => selectTab('bills')}>Bills</button>
         </div>
 
         {tab === 'orders' ? (
           <section className='panel'>
-            <h2>Orders</h2>
+            <div className='panel-header'>
+              <h2>Orders</h2>
+              <div className='filters'>
+                <label className='filter'>
+                  <span>Status</span>
+                  <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
+                    <option value='all'>All</option>
+                    <option value='draft'>Not Delivered</option>
+                    <option value='delivered'>Delivered</option>
+                  </select>
+                </label>
+                <label className='filter'>
+                  <span>Paid</span>
+                  <select value={paidFilter} onChange={e => setPaidFilter(e.target.value)}>
+                    <option value='all'>All</option>
+                    <option value='paid'>Paid</option>
+                    <option value='unpaid'>Not Paid Yet</option>
+                  </select>
+                </label>
+              </div>
+            </div>
+            <div className='table-scroll'>
             <table>
               <thead>
                 <tr>
@@ -139,7 +189,9 @@ export default function Home() {
                   <tr><td colSpan='9' className='empty'>Loading orders…</td></tr>
                 ) : orders.length === 0 ? (
                   <tr><td colSpan='9' className='empty'>No orders yet.</td></tr>
-                ) : orders.map(order => (
+                ) : filteredOrders.length === 0 ? (
+                  <tr><td colSpan='9' className='empty'>No orders match the selected filters.</td></tr>
+                ) : filteredOrders.map(order => (
                   <tr key={order.fileName}>
                     <td>{order.orderNumber || '—'}</td>
                     <td>{order.customerName || '—'}</td>
@@ -167,11 +219,13 @@ export default function Home() {
                 ))}
               </tbody>
             </table>
+            </div>
           </section>
         ) : (
           <div className='grid'>
             <section className='panel'>
               <h2>Draft Bills</h2>
+              <div className='table-scroll'>
               <table>
                 <thead>
                   <tr><th>Bill #</th><th>Customer</th><th>Date</th><th>Total</th><th>Paid</th><th>Action</th></tr>
@@ -198,10 +252,12 @@ export default function Home() {
                   ))}
                 </tbody>
               </table>
+              </div>
             </section>
 
             <section className='panel'>
               <h2>Delivered Bills</h2>
+              <div className='table-scroll'>
               <table>
                 <thead>
                   <tr><th>Bill #</th><th>Customer</th><th>Date</th><th>Total</th><th>Paid</th><th>Action</th></tr>
@@ -228,6 +284,7 @@ export default function Home() {
                   ))}
                 </tbody>
               </table>
+              </div>
             </section>
           </div>
         )}
@@ -242,14 +299,19 @@ export default function Home() {
         .brand-title h1{margin:0;color:#2e7d32}
         .brand-title p{margin:4px 0 0;color:#4f6b53}
         .top-actions{display:flex;gap:10px;flex-wrap:wrap}
-        .tabs{display:flex;gap:8px;margin-bottom:18px}
-        .tab{border:1px solid #d7e6da;background:#f2f7f2;color:#2e7d32;border-radius:10px;padding:10px 16px;font-weight:700;cursor:pointer}
+        .tabs{display:flex;gap:8px;margin-bottom:18px;width:100%}
+        .tab{border:1px solid #d7e6da;background:#f2f7f2;color:#2e7d32;border-radius:10px;padding:10px 16px;font-weight:700;cursor:pointer;flex:1}
         .tab.active{background:#2e7d32;color:#fff;border-color:#2e7d32}
         button,a.button{display:inline-flex;align-items:center;justify-content:center;border:none;border-radius:10px;padding:10px 14px;background:#2e7d32;color:#fff;text-decoration:none;cursor:pointer;font-weight:700}
         .button.secondary{background:#f2f7f2;color:#2e7d32;border:1px solid #d7e6da}
         .grid{display:grid;grid-template-columns:1fr;gap:18px}
         .panel{background:#fff;border-radius:18px;padding:18px;box-shadow:0 18px 40px rgba(26,61,35,.08)}
         .panel h2{margin:0 0 12px;font-size:18px;color:#2e7d32}
+        .panel-header{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+        .panel-header h2{margin:0}
+        .filters{display:flex;gap:12px;flex-wrap:wrap}
+        .filter{display:flex;flex-direction:column;gap:4px;font-size:11px;color:#6b7a6f;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+        .filter select{min-width:150px;padding:8px 10px;border:1px solid #dbe7de;border-radius:10px;background:#fcfdfc;color:#223126;font-weight:600;text-transform:none;letter-spacing:0;font-size:13px}
         table{width:100%;border-collapse:collapse}
         th,td{padding:12px 10px;border-bottom:1px solid #e8efe9;text-align:left;vertical-align:top}
         th{background:#f5faf5;color:#2e7d32;font-size:12px;text-transform:uppercase;letter-spacing:.06em}
@@ -261,7 +323,33 @@ export default function Home() {
         .badge.paid,.badge.delivered{background:#2e7d32;color:#fff}
         .badge.unpaid,.badge.draft{background:#f2f7f2;color:#2e7d32;border:1px solid #d7e6da}
         .flat-hint{display:block;margin-top:4px;font-size:12px;color:#6b7a6f}
-        @media (max-width:800px){.grid{grid-template-columns:1fr}}
+        .table-scroll{width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
+        .table-scroll table{min-width:720px}
+        @media (max-width:800px){
+          .page{margin:0 auto;padding:16px}
+          .header{align-items:flex-start}
+          .brand{width:100%}
+          .brand-title h1{font-size:22px}
+          .brand-title p{font-size:13px}
+          .top-actions{width:100%}
+          .top-actions a,.top-actions button{flex:1;min-width:0}
+          .tabs{width:100%}
+          .tab{flex:1}
+          .panel{padding:14px;border-radius:14px}
+          .panel-header{align-items:stretch;flex-direction:column}
+          .filters{width:100%}
+          .filter{flex:1;min-width:140px}
+          .filter select{width:100%;min-width:0;box-sizing:border-box}
+          .actions{flex-direction:column;align-items:stretch}
+          .actions .link,.actions button{width:100%;justify-content:center}
+          th,td{padding:10px 8px;font-size:13px}
+          .grid{grid-template-columns:1fr}
+        }
+        @media (max-width:480px){
+          .page{padding:12px}
+          .brand img{width:44px;height:44px}
+          .table-scroll table{min-width:640px}
+        }
       `}</style>
     </>
   );

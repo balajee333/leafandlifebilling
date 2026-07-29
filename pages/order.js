@@ -177,7 +177,7 @@ export default function OrderPage() {
       alert('Could not delete order: ' + (err.error || 'Unknown error'));
       return;
     }
-    router.push('/');
+    router.push('/?tab=orders');
   }
 
   return (
@@ -193,7 +193,7 @@ export default function OrderPage() {
             <p>Create orders for flat deliveries. Saving creates a linked draft bill automatically.</p>
           </div>
           <div className='actions'>
-            <a className='button secondary' href='/'>Back to Home</a>
+            <a className='button secondary' href='/?tab=orders'>Back to Orders</a>
             {billFileName && (
               <a className='button secondary' href={`/bill?fileName=${encodeURIComponent(billFileName)}`}>Open Linked Bill</a>
             )}
@@ -297,15 +297,18 @@ export default function OrderPage() {
         @media (max-width:900px){
           .grid{grid-template-columns:1fr}
           .actions{justify-content:flex-start}
-          .page{padding:16px}
-          .panel{padding:18px}
+          .page{margin:0 auto;padding:16px}
+          .panel{padding:18px;margin-top:14px}
+          .status-pill{justify-content:flex-start;text-align:left;width:fit-content;max-width:100%;white-space:normal}
         }
         @media (max-width:700px){
-          .header{align-items:flex-start}
+          .header{align-items:flex-start;flex-direction:column}
           .actions{width:100%;justify-content:flex-start}
-          .actions button,.actions a{width:100%}
-          .table-shell{overflow-x:auto}
-          .total{width:100%;justify-content:space-between}
+          .actions button,.actions a{width:100%;box-sizing:border-box}
+          .table-shell{overflow-x:auto;-webkit-overflow-scrolling:touch}
+          .table-shell table{min-width:520px}
+          .total{width:100%;justify-content:space-between;box-sizing:border-box}
+          input{font-size:16px}
         }
       `}</style>
     </>
