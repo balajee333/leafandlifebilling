@@ -216,24 +216,32 @@ a.ll-btn.secondary {
   letter-spacing: 0.06em;
 }
 
-.ll-table .col-num { width: 12%; }
-.ll-table .col-customer { width: 18%; }
+.ll-table .col-num { width: 14%; }
+.ll-table .col-customer { width: 22%; }
 .ll-table .col-flat { width: 14%; }
-.ll-table .col-flatno { width: 10%; }
-.ll-table .col-date { width: 12%; }
-.ll-table .col-qty { width: 8%; }
-.ll-table .col-total { width: 12%; }
+.ll-table .col-flatno { width: 12%; }
+.ll-table .col-date { width: 14%; }
+.ll-table .col-qty { width: 10%; }
+.ll-table .col-total { width: 14%; }
 .ll-table .col-status { width: 12%; }
 .ll-table .col-paid { width: 12%; }
 .ll-table .col-action { width: 14%; }
 
-.ll-table.bills .col-num { width: 16%; }
-.ll-table.bills .col-customer { width: 24%; }
-.ll-table.bills .col-date { width: 14%; }
-.ll-table.bills .col-total { width: 12%; }
-.ll-table.bills .col-status { width: 12%; }
-.ll-table.bills .col-paid { width: 12%; }
-.ll-table.bills .col-action { width: 10%; }
+.ll-flat-groups {
+  display: grid;
+  gap: 16px;
+}
+
+.ll-flat-group h3 {
+  margin: 0 0 8px;
+  font-size: 15px;
+  color: #1b5e20;
+  font-weight: 700;
+}
+
+.ll-panel > .ll-empty {
+  margin: 0;
+}
 
 .ll-empty {
   color: #6b7a6f;

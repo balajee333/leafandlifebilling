@@ -9,8 +9,6 @@ export default function Home() {
   const [drafts, setDrafts] = useState([]);
   const [delivered, setDelivered] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [billStatusFilter, setBillStatusFilter] = useState('all');
-  const [billPaidFilter, setBillPaidFilter] = useState('all');
 
   useEffect(() => {
     loadAll();
@@ -95,17 +93,6 @@ export default function Home() {
     }
   }
 
-  function customerCell(bill) {
-    const flatBits = [bill.flatName, bill.flatNumber].filter(Boolean).join(' · ');
-    if (!flatBits) return bill.customerName || '—';
-    return (
-      <span>
-        {bill.customerName || '—'}
-        <span className='ll-flat-hint'>{flatBits}</span>
-      </span>
-    );
-  }
-
   function orderTotalQty(order) {
     if (!Array.isArray(order.items)) return 0;
     return order.items.reduce((sum, item) => sum + Number(item.qty || 0), 0);
@@ -126,66 +113,160 @@ export default function Home() {
     [orders]
   );
 
-  function matchesPaidFilter(item, filter) {
-    if (filter === 'paid' && !item.paid) return false;
-    if (filter === 'unpaid' && item.paid) return false;
-    return true;
+  const allBills = useMemo(
+    () => [...drafts, ...delivered].sort(
+      (a, b) => new Date(b.updatedAt || b.createdAt || 0) - new Date(a.updatedAt || a.createdAt || 0)
+    ),
+    [drafts, delivered]
+  );
+
+  const notDeliveredBills = useMemo(
+    () => allBills.filter(bill => bill.status !== 'delivered'),
+    [allBills]
+  );
+
+  const deliveredUnpaidBills = useMemo(
+    () => allBills.filter(bill => bill.status === 'delivered' && !bill.paid),
+    [allBills]
+  );
+
+  const deliveredPaidBills = useMemo(
+    () => allBills.filter(bill => bill.status === 'delivered' && bill.paid),
+    [allBills]
+  );
+
+  function billTotalQty(bill) {
+    if (!Array.isArray(bill.items)) return 0;
+    return bill.items.reduce((sum, item) => sum + Number(item.qty || 0), 0);
   }
 
-  const filteredBills = useMemo(() => {
-    const all = [...drafts, ...delivered].sort(
-      (a, b) => new Date(b.updatedAt || b.createdAt || 0) - new Date(a.updatedAt || a.createdAt || 0)
-    );
-    return all.filter(bill => {
-      if (billStatusFilter === 'delivered' && bill.status !== 'delivered') return false;
-      if (billStatusFilter === 'draft' && bill.status === 'delivered') return false;
-      return matchesPaidFilter(bill, billPaidFilter);
-    });
-  }, [drafts, delivered, billStatusFilter, billPaidFilter]);
+  function groupByFlatName(list) {
+    const groups = new Map();
+    for (const item of list) {
+      const key = (item.flatName || '').trim() || 'No flat name';
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key).push(item);
+    }
+    return Array.from(groups.entries())
+      .sort((a, b) => {
+        if (a[0] === 'No flat name') return 1;
+        if (b[0] === 'No flat name') return -1;
+        return a[0].localeCompare(b[0], undefined, { sensitivity: 'base' });
+      })
+      .map(([flatName, items]) => ({
+        flatName,
+        items: items.slice().sort((a, b) => new Date(b.updatedAt || b.createdAt || 0) - new Date(a.updatedAt || a.createdAt || 0))
+      }));
+  }
 
   function renderOrdersTable(list, emptyMessage) {
+    if (loading) {
+      return <p className='ll-empty'>Loading orders…</p>;
+    }
+    if (list.length === 0) {
+      return <p className='ll-empty'>{emptyMessage}</p>;
+    }
+
+    const groups = groupByFlatName(list);
     return (
-      <div className='ll-table-scroll'>
-        <table className='ll-table'>
-          <thead>
-            <tr>
-              <th className='col-num'>Order #</th>
-              <th className='col-customer'>Customer</th>
-              <th className='col-flat'>Flat Name</th>
-              <th className='col-flatno'>Flat #</th>
-              <th className='col-date'>Date</th>
-              <th className='col-qty'>Qty</th>
-              <th className='col-total'>Total</th>
-              <th className='col-action'>Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            {loading ? (
-              <tr><td colSpan='8' className='ll-empty'>Loading orders…</td></tr>
-            ) : list.length === 0 ? (
-              <tr><td colSpan='8' className='ll-empty'>{emptyMessage}</td></tr>
-            ) : list.map(order => (
-              <tr key={order.fileName}>
-                <td className='col-num'>
-                  <a className='ll-number-link' href={`/order?fileName=${encodeURIComponent(order.fileName)}`}>
-                    {order.orderNumber || '—'}
-                  </a>
-                </td>
-                <td className='col-customer'>{order.customerName || '—'}</td>
-                <td className='col-flat'>{order.flatName || '—'}</td>
-                <td className='col-flatno'>{order.flatNumber || '—'}</td>
-                <td className='col-date'>{order.date || '—'}</td>
-                <td className='col-qty'>{orderTotalQty(order)}</td>
-                <td className='col-total'>₹ {Number(order.total || 0).toFixed(2)}</td>
-                <td className='col-action'>
-                  <div className='ll-actions'>
-                    <button type='button' className='ll-btn secondary' onClick={() => deleteOrder(order.fileName)}>Delete</button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <div className='ll-flat-groups'>
+        {groups.map(group => (
+          <div className='ll-flat-group' key={group.flatName}>
+            <h3>{group.flatName}</h3>
+            <div className='ll-table-scroll'>
+              <table className='ll-table'>
+                <thead>
+                  <tr>
+                    <th className='col-num'>Order #</th>
+                    <th className='col-customer'>Customer</th>
+                    <th className='col-flatno'>Flat #</th>
+                    <th className='col-date'>Date</th>
+                    <th className='col-qty'>Qty</th>
+                    <th className='col-total'>Total</th>
+                    <th className='col-action'>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {group.items.map(order => (
+                    <tr key={order.fileName}>
+                      <td className='col-num'>
+                        <a className='ll-number-link' href={`/order?fileName=${encodeURIComponent(order.fileName)}`}>
+                          {order.orderNumber || '—'}
+                        </a>
+                      </td>
+                      <td className='col-customer'>{order.customerName || '—'}</td>
+                      <td className='col-flatno'>{order.flatNumber || '—'}</td>
+                      <td className='col-date'>{order.date || '—'}</td>
+                      <td className='col-qty'>{orderTotalQty(order)}</td>
+                      <td className='col-total'>₹ {Number(order.total || 0).toFixed(2)}</td>
+                      <td className='col-action'>
+                        <div className='ll-actions'>
+                          <button type='button' className='ll-btn secondary' onClick={() => deleteOrder(order.fileName)}>Delete</button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  function renderBillsTable(list, emptyMessage) {
+    if (loading) {
+      return <p className='ll-empty'>Loading bills…</p>;
+    }
+    if (list.length === 0) {
+      return <p className='ll-empty'>{emptyMessage}</p>;
+    }
+
+    const groups = groupByFlatName(list);
+    return (
+      <div className='ll-flat-groups'>
+        {groups.map(group => (
+          <div className='ll-flat-group' key={group.flatName}>
+            <h3>{group.flatName}</h3>
+            <div className='ll-table-scroll'>
+              <table className='ll-table'>
+                <thead>
+                  <tr>
+                    <th className='col-num'>Bill #</th>
+                    <th className='col-customer'>Customer</th>
+                    <th className='col-flatno'>Flat #</th>
+                    <th className='col-date'>Date</th>
+                    <th className='col-qty'>Qty</th>
+                    <th className='col-total'>Total</th>
+                    <th className='col-action'>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {group.items.map(bill => (
+                    <tr key={bill.fileName}>
+                      <td className='col-num'>
+                        <a className='ll-number-link' href={`/bill?fileName=${encodeURIComponent(bill.fileName)}`}>
+                          {bill.billNumber || '—'}
+                        </a>
+                      </td>
+                      <td className='col-customer'>{bill.customerName || '—'}</td>
+                      <td className='col-flatno'>{bill.flatNumber || '—'}</td>
+                      <td className='col-date'>{bill.date || '—'}</td>
+                      <td className='col-qty'>{billTotalQty(bill)}</td>
+                      <td className='col-total'>₹ {Number(bill.total || 0).toFixed(2)}</td>
+                      <td className='col-action'>
+                        <div className='ll-actions'>
+                          <button type='button' className='ll-btn secondary' onClick={() => deleteBill(bill.fileName)}>Delete</button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ))}
       </div>
     );
   }
@@ -238,79 +319,20 @@ export default function Home() {
             </section>
           </div>
         ) : (
-          <section className='ll-panel'>
-            <div className='ll-panel-header'>
-              <h2>Bills</h2>
-              <div className='ll-filters'>
-                <label className='ll-filter'>
-                  <span>Status</span>
-                  <select value={billStatusFilter} onChange={e => setBillStatusFilter(e.target.value)}>
-                    <option value='all'>All</option>
-                    <option value='draft'>Draft</option>
-                    <option value='delivered'>Delivered</option>
-                  </select>
-                </label>
-                <label className='ll-filter'>
-                  <span>Paid</span>
-                  <select value={billPaidFilter} onChange={e => setBillPaidFilter(e.target.value)}>
-                    <option value='all'>All</option>
-                    <option value='paid'>Paid</option>
-                    <option value='unpaid'>Not Paid</option>
-                  </select>
-                </label>
-              </div>
-            </div>
-            <div className='ll-table-scroll'>
-              <table className='ll-table bills'>
-                <thead>
-                  <tr>
-                    <th className='col-num'>Bill #</th>
-                    <th className='col-customer'>Customer</th>
-                    <th className='col-date'>Date</th>
-                    <th className='col-total'>Total</th>
-                    <th className='col-status'>Status</th>
-                    <th className='col-paid'>Paid</th>
-                    <th className='col-action'>Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {loading ? (
-                    <tr><td colSpan='7' className='ll-empty'>Loading bills…</td></tr>
-                  ) : drafts.length + delivered.length === 0 ? (
-                    <tr><td colSpan='7' className='ll-empty'>No bills yet.</td></tr>
-                  ) : filteredBills.length === 0 ? (
-                    <tr><td colSpan='7' className='ll-empty'>No bills match the selected filters.</td></tr>
-                  ) : filteredBills.map(bill => (
-                    <tr key={bill.fileName}>
-                      <td className='col-num'>
-                        <a className='ll-number-link' href={`/bill?fileName=${encodeURIComponent(bill.fileName)}`}>
-                          {bill.billNumber || '—'}
-                        </a>
-                      </td>
-                      <td className='col-customer'>{customerCell(bill)}</td>
-                      <td className='col-date'>{bill.date || '—'}</td>
-                      <td className='col-total'>₹ {Number(bill.total || 0).toFixed(2)}</td>
-                      <td className='col-status'>
-                        <span className={`ll-badge ${bill.status === 'delivered' ? 'delivered' : 'draft'}`}>
-                          {bill.status === 'delivered' ? 'Delivered' : 'Draft'}
-                        </span>
-                      </td>
-                      <td className='col-paid'>
-                        <span className={`ll-badge ${bill.paid ? 'paid' : 'unpaid'}`}>
-                          {bill.paid ? 'Paid' : 'Not Paid'}
-                        </span>
-                      </td>
-                      <td className='col-action'>
-                        <div className='ll-actions'>
-                          <button type='button' className='ll-btn secondary' onClick={() => deleteBill(bill.fileName)}>Delete</button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </section>
+          <div className='ll-grid'>
+            <section className='ll-panel'>
+              <h2>Not Delivered</h2>
+              {renderBillsTable(notDeliveredBills, 'No undelivered bills.')}
+            </section>
+            <section className='ll-panel'>
+              <h2>Delivered · Not Paid</h2>
+              {renderBillsTable(deliveredUnpaidBills, 'No delivered unpaid bills.')}
+            </section>
+            <section className='ll-panel'>
+              <h2>Delivered · Paid</h2>
+              {renderBillsTable(deliveredPaidBills, 'No delivered paid bills.')}
+            </section>
+          </div>
         )}
       </div>
     </>
