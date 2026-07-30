@@ -20,9 +20,14 @@ export default function BillPage() {
   const [date, setDate] = useState(today);
   const [items, setItems] = useState([emptyItem]);
   const [loading, setLoading] = useState(false);
+  const [flatNames, setFlatNames] = useState([]);
 
   const total = useMemo(() => items.reduce((sum, item) => sum + Number(item.qty || 0) * Number(item.price || 0), 0), [items]);
   const isDelivered = status === 'delivered';
+
+  useEffect(() => {
+    loadFlatNames();
+  }, []);
 
   useEffect(() => {
     if (!router.isReady) return;
@@ -32,6 +37,16 @@ export default function BillPage() {
       resetBill();
     }
   }, [router.isReady, fileName]);
+
+  async function loadFlatNames() {
+    try {
+      const res = await fetch('/api/flat-names');
+      const data = await res.json().catch(() => []);
+      if (res.ok && Array.isArray(data)) setFlatNames(data);
+    } catch {
+      // keep existing options
+    }
+  }
 
   function resetBill() {
     setCurrentFileName('');
@@ -125,14 +140,21 @@ export default function BillPage() {
     const result = await res.json().catch(() => ({}));
     if (!res.ok) {
       alert(result.error || 'Unable to save bill.');
-      return;
+      return false;
     }
     setCurrentFileName(result.fileName);
     setBillNumber(result.billNumber || billNumber);
     setStatus(result.status || targetStatus);
     setPaid(result.paid ?? paidState);
+    await loadFlatNames();
+    if (targetStatus === 'draft') {
+      alert('Draft saved successfully.');
+      router.push('/?tab=bills');
+      return true;
+    }
     router.replace({ pathname: '/bill', query: { fileName: result.fileName } }, undefined, { shallow: true });
     alert(targetStatus === 'delivered' ? 'Bill marked as delivered.' : 'Draft saved successfully.');
+    return true;
   }
 
   async function saveDraft() {
@@ -207,7 +229,6 @@ export default function BillPage() {
             <div className='actions'>
               <a className='button secondary' href='/?tab=bills'>Back to Bills</a>
               <button className='button secondary delete-action' onClick={deleteCurrentBill}>Delete Bill</button>
-              {!isDelivered && <button className='button secondary' onClick={saveDraft}>Save Draft</button>}
               {!isDelivered && <button className='button' onClick={markDelivered}>Mark as Delivered</button>}
               {!paid ? (
                 <button className='button secondary' onClick={markPaid}>Mark as Paid</button>
@@ -238,7 +259,19 @@ export default function BillPage() {
               </div>
               <div className='field'>
                 <label>Flat Name</label>
-                <input value={flatName} onChange={e => setFlatName(e.target.value)} disabled={isDelivered} placeholder='Flat / apartment name (optional)' />
+                <input
+                  list='flat-name-options'
+                  value={flatName}
+                  onChange={e => setFlatName(e.target.value)}
+                  disabled={isDelivered}
+                  placeholder='Select or type flat / apartment name (optional)'
+                  autoComplete='off'
+                />
+                <datalist id='flat-name-options'>
+                  {flatNames.map(name => (
+                    <option key={name} value={name} />
+                  ))}
+                </datalist>
               </div>
               <div className='field'>
                 <label>Flat Number</label>
@@ -275,6 +308,9 @@ export default function BillPage() {
                 </table>
               </div>
               <button className='button secondary add-row-btn' onClick={addItem} disabled={isDelivered}>+ Add Item</button>
+              {!isDelivered && (
+                <button className='button save-draft-btn' onClick={saveDraft}>Save Draft</button>
+              )}
             </div>
 
             <div className='total'><span>Total</span><span id='totalValue'>₹ {total.toFixed(2)}</span></div>
@@ -367,6 +403,7 @@ export default function BillPage() {
         input:focus{outline:none;border-color:#2e7d32}
         .table-shell{border:1px solid #e8efe9;border-radius:14px;overflow:hidden;background:#fff;margin-top:10px}
         .add-row-btn{margin-top:12px;align-self:flex-start}
+        .save-draft-btn{margin-top:10px;align-self:stretch;width:100%}
         table{width:100%;border-collapse:collapse}
         th,td{padding:12px 12px;border-bottom:1px solid #e8efe9;text-align:left}
         th{background:#f5faf5;color:#2e7d32;font-size:12px;text-transform:uppercase;letter-spacing:.06em}
@@ -409,7 +446,7 @@ export default function BillPage() {
           .header{align-items:flex-start;flex-direction:column}
           .actions{width:100%;justify-content:flex-start;gap:8px}
           .actions button,.actions a.button{width:100%;box-sizing:border-box;font-size:16px;padding:12px 16px;min-height:48px;line-height:1.35}
-          .add-row-btn{font-size:16px;padding:12px 16px;min-height:48px}
+          .add-row-btn,.save-draft-btn{font-size:16px;padding:12px 16px;min-height:48px;width:100%;box-sizing:border-box}
           .table-shell{overflow-x:auto;-webkit-overflow-scrolling:touch}
           .table-shell table{min-width:520px}
           .field.item-section{padding-bottom:0}
@@ -419,7 +456,7 @@ export default function BillPage() {
         @media print{
           :global(body){background:#fff}
           .page{margin:0;padding:0;max-width:none}
-          .editor-layout,.actions button,.actions a,.add-row-btn{display:none!important}
+          .editor-layout,.actions button,.actions a,.add-row-btn,.save-draft-btn{display:none!important}
           .print-layout{display:block!important}
           .invoice-card{box-shadow:none;border:0;padding:0}
           .panel,.header{display:none!important}

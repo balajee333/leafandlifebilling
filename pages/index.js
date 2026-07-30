@@ -9,8 +9,6 @@ export default function Home() {
   const [drafts, setDrafts] = useState([]);
   const [delivered, setDelivered] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [paidFilter, setPaidFilter] = useState('all');
   const [billStatusFilter, setBillStatusFilter] = useState('all');
   const [billPaidFilter, setBillPaidFilter] = useState('all');
 
@@ -108,15 +106,25 @@ export default function Home() {
     );
   }
 
-  const filteredOrders = useMemo(() => {
-    return orders.filter(order => {
-      if (statusFilter === 'delivered' && order.status !== 'delivered') return false;
-      if (statusFilter === 'draft' && order.status === 'delivered') return false;
-      if (paidFilter === 'paid' && !order.paid) return false;
-      if (paidFilter === 'unpaid' && order.paid) return false;
-      return true;
-    });
-  }, [orders, statusFilter, paidFilter]);
+  function orderTotalQty(order) {
+    if (!Array.isArray(order.items)) return 0;
+    return order.items.reduce((sum, item) => sum + Number(item.qty || 0), 0);
+  }
+
+  const notDeliveredOrders = useMemo(
+    () => orders.filter(order => order.status !== 'delivered'),
+    [orders]
+  );
+
+  const deliveredUnpaidOrders = useMemo(
+    () => orders.filter(order => order.status === 'delivered' && !order.paid),
+    [orders]
+  );
+
+  const deliveredPaidOrders = useMemo(
+    () => orders.filter(order => order.status === 'delivered' && order.paid),
+    [orders]
+  );
 
   function matchesPaidFilter(item, filter) {
     if (filter === 'paid' && !item.paid) return false;
@@ -134,6 +142,53 @@ export default function Home() {
       return matchesPaidFilter(bill, billPaidFilter);
     });
   }, [drafts, delivered, billStatusFilter, billPaidFilter]);
+
+  function renderOrdersTable(list, emptyMessage) {
+    return (
+      <div className='table-scroll'>
+        <table>
+          <thead>
+            <tr>
+              <th>Order #</th>
+              <th>Customer</th>
+              <th>Flat Name</th>
+              <th>Flat #</th>
+              <th>Date</th>
+              <th>Qty</th>
+              <th>Total</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {loading ? (
+              <tr><td colSpan='8' className='empty'>Loading orders…</td></tr>
+            ) : list.length === 0 ? (
+              <tr><td colSpan='8' className='empty'>{emptyMessage}</td></tr>
+            ) : list.map(order => (
+              <tr key={order.fileName}>
+                <td>
+                  <a className='number-link' href={`/order?fileName=${encodeURIComponent(order.fileName)}`}>
+                    {order.orderNumber || '—'}
+                  </a>
+                </td>
+                <td>{order.customerName || '—'}</td>
+                <td>{order.flatName || '—'}</td>
+                <td>{order.flatNumber || '—'}</td>
+                <td>{order.date || '—'}</td>
+                <td>{orderTotalQty(order)}</td>
+                <td>₹ {Number(order.total || 0).toFixed(2)}</td>
+                <td>
+                  <div className='actions'>
+                    <button className='button secondary' onClick={() => deleteOrder(order.fileName)}>Delete</button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -168,83 +223,20 @@ export default function Home() {
         </div>
 
         {tab === 'orders' ? (
-          <section className='panel'>
-            <div className='panel-header'>
-              <h2>Orders</h2>
-              <div className='filters'>
-                <label className='filter'>
-                  <span>Status</span>
-                  <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
-                    <option value='all'>All</option>
-                    <option value='draft'>Not Delivered</option>
-                    <option value='delivered'>Delivered</option>
-                  </select>
-                </label>
-                <label className='filter'>
-                  <span>Paid</span>
-                  <select value={paidFilter} onChange={e => setPaidFilter(e.target.value)}>
-                    <option value='all'>All</option>
-                    <option value='paid'>Paid</option>
-                    <option value='unpaid'>Not Paid Yet</option>
-                  </select>
-                </label>
-              </div>
-            </div>
-            <div className='table-scroll'>
-            <table>
-              <thead>
-                <tr>
-                  <th>Order #</th>
-                  <th>Customer</th>
-                  <th>Flat Name</th>
-                  <th>Flat #</th>
-                  <th>Date</th>
-                  <th>Total</th>
-                  <th>Status</th>
-                  <th>Paid</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {loading ? (
-                  <tr><td colSpan='9' className='empty'>Loading orders…</td></tr>
-                ) : orders.length === 0 ? (
-                  <tr><td colSpan='9' className='empty'>No orders yet.</td></tr>
-                ) : filteredOrders.length === 0 ? (
-                  <tr><td colSpan='9' className='empty'>No orders match the selected filters.</td></tr>
-                ) : filteredOrders.map(order => (
-                  <tr key={order.fileName}>
-                    <td>
-                      <a className='number-link' href={`/order?fileName=${encodeURIComponent(order.fileName)}`}>
-                        {order.orderNumber || '—'}
-                      </a>
-                    </td>
-                    <td>{order.customerName || '—'}</td>
-                    <td>{order.flatName || '—'}</td>
-                    <td>{order.flatNumber || '—'}</td>
-                    <td>{order.date || '—'}</td>
-                    <td>₹ {Number(order.total || 0).toFixed(2)}</td>
-                    <td>
-                      <span className={`badge ${order.status === 'delivered' ? 'delivered' : 'draft'}`}>
-                        {order.status === 'delivered' ? 'Delivered' : 'Not Delivered'}
-                      </span>
-                    </td>
-                    <td>
-                      <span className={`badge ${order.paid ? 'paid' : 'unpaid'}`}>
-                        {order.paid ? 'Paid' : 'Not Paid Yet'}
-                      </span>
-                    </td>
-                    <td>
-                      <div className='actions'>
-                        <button className='button secondary' onClick={() => deleteOrder(order.fileName)}>Delete</button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            </div>
-          </section>
+          <div className='grid'>
+            <section className='panel'>
+              <h2>Not Delivered</h2>
+              {renderOrdersTable(notDeliveredOrders, 'No undelivered orders.')}
+            </section>
+            <section className='panel'>
+              <h2>Delivered · Not Paid</h2>
+              {renderOrdersTable(deliveredUnpaidOrders, 'No delivered unpaid orders.')}
+            </section>
+            <section className='panel'>
+              <h2>Delivered · Paid</h2>
+              {renderOrdersTable(deliveredPaidOrders, 'No delivered paid orders.')}
+            </section>
+          </div>
         ) : (
           <section className='panel'>
             <div className='panel-header'>

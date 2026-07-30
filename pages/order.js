@@ -21,9 +21,14 @@ export default function OrderPage() {
   const [date, setDate] = useState(today);
   const [items, setItems] = useState([emptyItem]);
   const [loading, setLoading] = useState(false);
+  const [flatNames, setFlatNames] = useState([]);
 
   const total = useMemo(() => items.reduce((sum, item) => sum + Number(item.qty || 0) * Number(item.price || 0), 0), [items]);
   const isDelivered = status === 'delivered';
+
+  useEffect(() => {
+    loadFlatNames();
+  }, []);
 
   useEffect(() => {
     if (!router.isReady) return;
@@ -33,6 +38,16 @@ export default function OrderPage() {
       resetOrder();
     }
   }, [router.isReady, fileName]);
+
+  async function loadFlatNames() {
+    try {
+      const res = await fetch('/api/flat-names');
+      const data = await res.json().catch(() => []);
+      if (res.ok && Array.isArray(data)) setFlatNames(data);
+    } catch {
+      // keep existing options
+    }
+  }
 
   function resetOrder() {
     setCurrentFileName('');
@@ -140,15 +155,22 @@ export default function OrderPage() {
     const result = await res.json().catch(() => ({}));
     if (!res.ok) {
       alert(result.error || 'Unable to save order.');
-      return;
+      return false;
     }
     setCurrentFileName(result.fileName);
     setOrderNumber(result.orderNumber || orderNumber);
     setBillFileName(result.billFileName || billFileName);
     setStatus(result.status || targetStatus);
     setPaid(result.paid ?? paidState);
+    await loadFlatNames();
+    if (targetStatus === 'draft') {
+      alert(message || 'Order draft saved. Linked draft bill created/updated.');
+      router.push('/?tab=orders');
+      return true;
+    }
     router.replace({ pathname: '/order', query: { fileName: result.fileName } }, undefined, { shallow: true });
     alert(message || (targetStatus === 'delivered' ? 'Order marked as delivered.' : 'Order draft saved. Linked draft bill created/updated.'));
+    return true;
   }
 
   async function saveDraft() {
@@ -209,7 +231,6 @@ export default function OrderPage() {
               <a className='button secondary' href={`/bill?fileName=${encodeURIComponent(billFileName)}`}>Open Linked Bill</a>
             )}
             <button className='button secondary delete-action' onClick={deleteCurrentOrder}>Delete Order</button>
-            {!isDelivered && <button className='button secondary' onClick={saveDraft} disabled={loading}>Save Draft</button>}
             {!isDelivered && <button className='button' onClick={markDelivered} disabled={loading}>Mark as Delivered</button>}
             {!paid ? (
               <button className='button secondary' onClick={markPaid} disabled={loading}>Mark as Paid</button>
@@ -239,7 +260,19 @@ export default function OrderPage() {
             </div>
             <div className='field'>
               <label>Flat Name</label>
-              <input value={flatName} onChange={e => setFlatName(e.target.value)} disabled={isDelivered} placeholder='Flat / apartment name' />
+              <input
+                list='flat-name-options'
+                value={flatName}
+                onChange={e => setFlatName(e.target.value)}
+                disabled={isDelivered}
+                placeholder='Select or type flat / apartment name'
+                autoComplete='off'
+              />
+              <datalist id='flat-name-options'>
+                {flatNames.map(name => (
+                  <option key={name} value={name} />
+                ))}
+              </datalist>
             </div>
             <div className='field'>
               <label>Flat Number</label>
@@ -276,6 +309,9 @@ export default function OrderPage() {
               </table>
             </div>
             <button className='button secondary add-row-btn' onClick={addItem} disabled={isDelivered}>+ Add Item</button>
+            {!isDelivered && (
+              <button className='button save-draft-btn' onClick={saveDraft} disabled={loading}>Save Draft</button>
+            )}
           </div>
 
           <div className='total'><span>Total</span><span>₹ {total.toFixed(2)}</span></div>
@@ -303,6 +339,7 @@ export default function OrderPage() {
         input:focus{outline:none;border-color:#2e7d32}
         .table-shell{border:1px solid #e8efe9;border-radius:14px;overflow:hidden;background:#fff;margin-top:10px}
         .add-row-btn{margin-top:12px;align-self:flex-start}
+        .save-draft-btn{margin-top:10px;align-self:stretch;width:100%}
         table{width:100%;border-collapse:collapse}
         th,td{padding:12px 12px;border-bottom:1px solid #e8efe9;text-align:left}
         th{background:#f5faf5;color:#2e7d32;font-size:12px;text-transform:uppercase;letter-spacing:.06em}
@@ -320,7 +357,7 @@ export default function OrderPage() {
           .header{align-items:flex-start;flex-direction:column}
           .actions{width:100%;justify-content:flex-start;gap:8px}
           .actions button,.actions a.button{width:100%;box-sizing:border-box;font-size:16px;padding:12px 16px;min-height:48px;line-height:1.35}
-          .add-row-btn{font-size:16px;padding:12px 16px;min-height:48px}
+          .add-row-btn,.save-draft-btn{font-size:16px;padding:12px 16px;min-height:48px;width:100%;box-sizing:border-box}
           .table-shell{overflow-x:auto;-webkit-overflow-scrolling:touch}
           .table-shell table{min-width:520px}
           .total{width:100%;justify-content:space-between;box-sizing:border-box}
