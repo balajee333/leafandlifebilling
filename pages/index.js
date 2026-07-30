@@ -1,5 +1,5 @@
 import Head from 'next/head';
-import { useEffect, useMemo, useState } from 'react';
+import { Fragment, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/router';
 
 export default function Home() {
@@ -169,48 +169,48 @@ export default function Home() {
 
     const groups = groupByFlatName(list);
     return (
-      <div className='ll-flat-groups'>
-        {groups.map(group => (
-          <div className='ll-flat-group' key={group.flatName}>
-            <h3>{group.flatName}</h3>
-            <div className='ll-table-scroll'>
-              <table className='ll-table'>
-                <thead>
-                  <tr>
-                    <th className='col-num'>Order #</th>
-                    <th className='col-customer'>Customer</th>
-                    <th className='col-flatno'>Flat #</th>
-                    <th className='col-date'>Date</th>
-                    <th className='col-qty'>Qty</th>
-                    <th className='col-total'>Total</th>
-                    <th className='col-action'>Action</th>
+      <div className='ll-table-scroll'>
+        <table className='ll-table'>
+          <thead>
+            <tr>
+              <th className='col-num'>Order #</th>
+              <th className='col-customer'>Customer</th>
+              <th className='col-flatno'>Flat #</th>
+              <th className='col-date'>Date</th>
+              <th className='col-qty'>Qty</th>
+              <th className='col-total'>Total</th>
+              <th className='col-action'>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {groups.map(group => (
+              <Fragment key={group.flatName}>
+                <tr className='ll-flat-row'>
+                  <td colSpan='7'>{group.flatName}</td>
+                </tr>
+                {group.items.map(order => (
+                  <tr key={order.fileName}>
+                    <td className='col-num'>
+                      <a className='ll-number-link' href={`/order?fileName=${encodeURIComponent(order.fileName)}`}>
+                        {order.orderNumber || '—'}
+                      </a>
+                    </td>
+                    <td className='col-customer'>{order.customerName || '—'}</td>
+                    <td className='col-flatno'>{order.flatNumber || '—'}</td>
+                    <td className='col-date'>{order.date || '—'}</td>
+                    <td className='col-qty'>{orderTotalQty(order)}</td>
+                    <td className='col-total'>₹ {Number(order.total || 0).toFixed(2)}</td>
+                    <td className='col-action'>
+                      <div className='ll-actions'>
+                        <button type='button' className='ll-btn secondary' onClick={() => deleteOrder(order.fileName)}>Delete</button>
+                      </div>
+                    </td>
                   </tr>
-                </thead>
-                <tbody>
-                  {group.items.map(order => (
-                    <tr key={order.fileName}>
-                      <td className='col-num'>
-                        <a className='ll-number-link' href={`/order?fileName=${encodeURIComponent(order.fileName)}`}>
-                          {order.orderNumber || '—'}
-                        </a>
-                      </td>
-                      <td className='col-customer'>{order.customerName || '—'}</td>
-                      <td className='col-flatno'>{order.flatNumber || '—'}</td>
-                      <td className='col-date'>{order.date || '—'}</td>
-                      <td className='col-qty'>{orderTotalQty(order)}</td>
-                      <td className='col-total'>₹ {Number(order.total || 0).toFixed(2)}</td>
-                      <td className='col-action'>
-                        <div className='ll-actions'>
-                          <button type='button' className='ll-btn secondary' onClick={() => deleteOrder(order.fileName)}>Delete</button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        ))}
+                ))}
+              </Fragment>
+            ))}
+          </tbody>
+        </table>
       </div>
     );
   }
@@ -225,48 +225,48 @@ export default function Home() {
 
     const groups = groupByFlatName(list);
     return (
-      <div className='ll-flat-groups'>
-        {groups.map(group => (
-          <div className='ll-flat-group' key={group.flatName}>
-            <h3>{group.flatName}</h3>
-            <div className='ll-table-scroll'>
-              <table className='ll-table'>
-                <thead>
-                  <tr>
-                    <th className='col-num'>Bill #</th>
-                    <th className='col-customer'>Customer</th>
-                    <th className='col-flatno'>Flat #</th>
-                    <th className='col-date'>Date</th>
-                    <th className='col-qty'>Qty</th>
-                    <th className='col-total'>Total</th>
-                    <th className='col-action'>Action</th>
+      <div className='ll-table-scroll'>
+        <table className='ll-table'>
+          <thead>
+            <tr>
+              <th className='col-num'>Bill #</th>
+              <th className='col-customer'>Customer</th>
+              <th className='col-flatno'>Flat #</th>
+              <th className='col-date'>Date</th>
+              <th className='col-qty'>Qty</th>
+              <th className='col-total'>Total</th>
+              <th className='col-action'>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {groups.map(group => (
+              <Fragment key={group.flatName}>
+                <tr className='ll-flat-row'>
+                  <td colSpan='7'>{group.flatName}</td>
+                </tr>
+                {group.items.map(bill => (
+                  <tr key={bill.fileName}>
+                    <td className='col-num'>
+                      <a className='ll-number-link' href={`/bill?fileName=${encodeURIComponent(bill.fileName)}`}>
+                        {bill.billNumber || '—'}
+                      </a>
+                    </td>
+                    <td className='col-customer'>{bill.customerName || '—'}</td>
+                    <td className='col-flatno'>{bill.flatNumber || '—'}</td>
+                    <td className='col-date'>{bill.date || '—'}</td>
+                    <td className='col-qty'>{billTotalQty(bill)}</td>
+                    <td className='col-total'>₹ {Number(bill.total || 0).toFixed(2)}</td>
+                    <td className='col-action'>
+                      <div className='ll-actions'>
+                        <button type='button' className='ll-btn secondary' onClick={() => deleteBill(bill.fileName)}>Delete</button>
+                      </div>
+                    </td>
                   </tr>
-                </thead>
-                <tbody>
-                  {group.items.map(bill => (
-                    <tr key={bill.fileName}>
-                      <td className='col-num'>
-                        <a className='ll-number-link' href={`/bill?fileName=${encodeURIComponent(bill.fileName)}`}>
-                          {bill.billNumber || '—'}
-                        </a>
-                      </td>
-                      <td className='col-customer'>{bill.customerName || '—'}</td>
-                      <td className='col-flatno'>{bill.flatNumber || '—'}</td>
-                      <td className='col-date'>{bill.date || '—'}</td>
-                      <td className='col-qty'>{billTotalQty(bill)}</td>
-                      <td className='col-total'>₹ {Number(bill.total || 0).toFixed(2)}</td>
-                      <td className='col-action'>
-                        <div className='ll-actions'>
-                          <button type='button' className='ll-btn secondary' onClick={() => deleteBill(bill.fileName)}>Delete</button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        ))}
+                ))}
+              </Fragment>
+            ))}
+          </tbody>
+        </table>
       </div>
     );
   }

@@ -227,16 +227,14 @@ a.ll-btn.secondary {
 .ll-table .col-paid { width: 12%; }
 .ll-table .col-action { width: 14%; }
 
-.ll-flat-groups {
-  display: grid;
-  gap: 16px;
-}
-
-.ll-flat-group h3 {
-  margin: 0 0 8px;
-  font-size: 15px;
+.ll-table tr.ll-flat-row td {
+  background: #eef6ef;
   color: #1b5e20;
   font-weight: 700;
+  font-size: 14px;
+  padding-top: 10px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #d5e5d8;
 }
 
 .ll-panel > .ll-empty {
