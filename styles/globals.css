@@ -1,0 +1,381 @@
+html, body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: "Segoe UI", Arial, sans-serif;
+  background: linear-gradient(135deg, #f4f8f4 0%, #eaf4ea 100%);
+  color: #223126;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+a {
+  color: inherit;
+}
+
+.ll-page {
+  max-width: 1100px;
+  margin: 24px auto;
+  padding: 24px;
+}
+
+.ll-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.ll-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.ll-brand-link {
+  display: inline-flex;
+  flex-shrink: 0;
+  line-height: 0;
+  text-decoration: none;
+}
+
+.ll-brand img {
+  width: 52px;
+  height: 52px;
+  object-fit: contain;
+  display: block;
+}
+
+.ll-brand-title h1 {
+  margin: 0;
+  color: #2e7d32;
+  font-size: 28px;
+}
+
+.ll-brand-title p {
+  margin: 4px 0 0;
+  color: #4f6b53;
+}
+
+.ll-top-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.ll-btn,
+button.ll-btn,
+a.ll-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 10px;
+  padding: 10px 14px;
+  background: #2e7d32;
+  color: #fff !important;
+  text-decoration: none !important;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 14px;
+  min-height: 40px;
+  font-family: inherit;
+}
+
+.ll-btn.secondary,
+button.ll-btn.secondary,
+a.ll-btn.secondary {
+  background: #f2f7f2;
+  color: #2e7d32 !important;
+  border: 1px solid #d7e6da;
+}
+
+.ll-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 18px;
+  width: 100%;
+}
+
+.ll-tab {
+  border: 1px solid #d7e6da;
+  background: #f2f7f2;
+  color: #2e7d32;
+  border-radius: 10px;
+  padding: 10px 16px;
+  font-weight: 700;
+  cursor: pointer;
+  flex: 1;
+  font-family: inherit;
+  font-size: 14px;
+}
+
+.ll-tab.active {
+  background: #2e7d32;
+  color: #fff;
+  border-color: #2e7d32;
+}
+
+.ll-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 18px;
+}
+
+.ll-panel {
+  background: #fff;
+  border-radius: 18px;
+  padding: 18px;
+  box-shadow: 0 18px 40px rgba(26, 61, 35, 0.08);
+}
+
+.ll-panel h2 {
+  margin: 0 0 12px;
+  font-size: 18px;
+  color: #2e7d32;
+}
+
+.ll-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.ll-panel-header h2 {
+  margin: 0;
+}
+
+.ll-filters {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.ll-filter {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 11px;
+  color: #6b7a6f;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.ll-filter select {
+  min-width: 150px;
+  padding: 8px 10px;
+  border: 1px solid #dbe7de;
+  border-radius: 10px;
+  background: #fcfdfc;
+  color: #223126;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 13px;
+  font-family: inherit;
+}
+
+.ll-table-scroll {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.ll-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  min-width: 760px;
+}
+
+.ll-table th,
+.ll-table td {
+  padding: 12px 10px;
+  border-bottom: 1px solid #e8efe9;
+  text-align: left;
+  vertical-align: top;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+.ll-table th {
+  background: #f5faf5;
+  color: #2e7d32;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.ll-table .col-num { width: 12%; }
+.ll-table .col-customer { width: 18%; }
+.ll-table .col-flat { width: 14%; }
+.ll-table .col-flatno { width: 10%; }
+.ll-table .col-date { width: 12%; }
+.ll-table .col-qty { width: 8%; }
+.ll-table .col-total { width: 12%; }
+.ll-table .col-status { width: 12%; }
+.ll-table .col-paid { width: 12%; }
+.ll-table .col-action { width: 14%; }
+
+.ll-table.bills .col-num { width: 16%; }
+.ll-table.bills .col-customer { width: 24%; }
+.ll-table.bills .col-date { width: 14%; }
+.ll-table.bills .col-total { width: 12%; }
+.ll-table.bills .col-status { width: 12%; }
+.ll-table.bills .col-paid { width: 12%; }
+.ll-table.bills .col-action { width: 10%; }
+
+.ll-empty {
+  color: #6b7a6f;
+  font-style: italic;
+}
+
+.ll-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.ll-actions .ll-btn {
+  min-height: 36px;
+  padding: 8px 12px;
+  font-size: 13px;
+}
+
+.ll-number-link {
+  color: #2e7d32 !important;
+  font-weight: 700;
+  text-decoration: underline !important;
+  text-underline-offset: 2px;
+}
+
+.ll-number-link:hover {
+  color: #1b5e20 !important;
+}
+
+.ll-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.ll-badge.paid,
+.ll-badge.delivered {
+  background: #2e7d32;
+  color: #fff;
+}
+
+.ll-badge.unpaid,
+.ll-badge.draft {
+  background: #f2f7f2;
+  color: #2e7d32;
+  border: 1px solid #d7e6da;
+}
+
+.ll-flat-hint {
+  display: block;
+  margin-top: 4px;
+  font-size: 12px;
+  color: #6b7a6f;
+}
+
+@media (max-width: 800px) {
+  .ll-page {
+    margin: 0 auto;
+    padding: 16px;
+  }
+
+  .ll-header {
+    align-items: flex-start;
+  }
+
+  .ll-brand {
+    width: 100%;
+  }
+
+  .ll-brand-title h1 {
+    font-size: 22px;
+  }
+
+  .ll-brand-title p {
+    font-size: 13px;
+  }
+
+  .ll-top-actions {
+    width: 100%;
+  }
+
+  .ll-top-actions .ll-btn {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .ll-panel {
+    padding: 14px;
+    border-radius: 14px;
+  }
+
+  .ll-panel-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .ll-filters {
+    width: 100%;
+  }
+
+  .ll-filter {
+    flex: 1;
+    min-width: 140px;
+  }
+
+  .ll-filter select {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .ll-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .ll-actions .ll-btn {
+    width: 100%;
+  }
+
+  .ll-table th,
+  .ll-table td {
+    padding: 10px 8px;
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 480px) {
+  .ll-page {
+    padding: 12px;
+  }
+
+  .ll-brand img {
+    width: 44px;
+    height: 44px;
+  }
+
+  .ll-table {
+    min-width: 680px;
+  }
+}
