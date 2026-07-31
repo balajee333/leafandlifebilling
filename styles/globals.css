@@ -353,14 +353,87 @@ a.ll-btn.secondary {
   color: #6b7a6f;
 }
 
+.ll-mobile-only {
+  display: none;
+}
+
+.ll-desktop-only {
+  display: block;
+}
+
+.ll-mobile-list {
+  display: none;
+  gap: 14px;
+}
+
+.ll-mobile-group-title {
+  background: #eef6ef;
+  color: #1b5e20;
+  font-weight: 700;
+  font-size: 14px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  margin-bottom: 8px;
+}
+
+.ll-mobile-cards {
+  display: grid;
+  gap: 10px;
+}
+
+.ll-mobile-card {
+  border: 1px solid #e0ebe2;
+  border-radius: 12px;
+  padding: 12px;
+  background: #fcfdfc;
+}
+
+.ll-mobile-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.ll-mobile-card-name {
+  font-size: 16px;
+  font-weight: 700;
+  color: #223126;
+  margin-bottom: 6px;
+}
+
+.ll-mobile-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  color: #5f7264;
+  font-size: 13px;
+  margin-bottom: 10px;
+}
+
+.ll-mobile-card-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.ll-mobile-card-bottom strong {
+  font-size: 16px;
+  color: #1b5e20;
+}
+
 @media (max-width: 800px) {
   .ll-page {
-    margin: 0 auto;
-    padding: 16px;
+    margin: 0;
+    padding: 14px 12px 24px;
+    max-width: none;
   }
 
   .ll-header {
     align-items: flex-start;
+    margin-bottom: 12px;
   }
 
   .ll-brand {
@@ -387,6 +460,7 @@ a.ll-btn.secondary {
   .ll-panel {
     padding: 14px;
     border-radius: 14px;
+    box-shadow: 0 8px 24px rgba(26, 61, 35, 0.06);
   }
 
   .ll-panel-header {
@@ -419,19 +493,28 @@ a.ll-btn.secondary {
   }
 
   .ll-actions .ll-icon-btn {
-    width: 36px;
+    width: 40px;
+    min-width: 40px;
+    min-height: 40px;
   }
 
-  .ll-table th,
-  .ll-table td {
-    padding: 10px 8px;
-    font-size: 13px;
+  .ll-desktop-only {
+    display: none !important;
+  }
+
+  .ll-mobile-only,
+  .ll-mobile-list {
+    display: grid;
+  }
+
+  .ll-table {
+    min-width: 0;
   }
 }
 
 @media (max-width: 480px) {
   .ll-page {
-    padding: 12px;
+    padding: 10px 10px 20px;
   }
 
   .ll-brand img {
@@ -439,7 +522,33 @@ a.ll-btn.secondary {
     height: 44px;
   }
 
-  .ll-table {
-    min-width: 680px;
+  .ll-brand-title p {
+    display: none;
+  }
+
+  .ll-tabs {
+    margin-bottom: 12px;
+  }
+
+  .ll-tab {
+    padding: 12px 14px;
+    min-height: 44px;
+  }
+
+  .ll-panel {
+    padding: 12px;
+  }
+
+  .ll-panel h2 {
+    font-size: 16px;
+    margin-bottom: 10px;
+  }
+
+  .ll-mobile-card {
+    padding: 12px;
+  }
+
+  .ll-mobile-card-name {
+    font-size: 15px;
   }
 }

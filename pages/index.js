@@ -2,6 +2,30 @@ import Head from 'next/head';
 import { Fragment, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/router';
 
+function DeleteIconButton({ onClick, label }) {
+  return (
+    <button
+      type='button'
+      className='ll-btn secondary ll-icon-btn'
+      onClick={onClick}
+      aria-label={label}
+      title='Delete'
+    >
+      <svg viewBox='0 0 24 24' width='16' height='16' aria-hidden='true' focusable='false'>
+        <path fill='currentColor' d='M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z' />
+      </svg>
+    </button>
+  );
+}
+
+function PaidBadge({ paid }) {
+  return (
+    <span className={`ll-paid-badge ${paid ? 'is-paid' : 'is-unpaid'}`}>
+      {paid ? 'Paid' : 'Not Yet'}
+    </span>
+  );
+}
+
 export default function Home() {
   const router = useRouter();
   const [tab, setTab] = useState('orders');
@@ -170,70 +194,93 @@ export default function Home() {
     const colSpan = showPaid ? 8 : 7;
     const groups = groupByFlatName(list);
     return (
-      <div className='ll-table-scroll'>
-        <table className='ll-table'>
-          <thead>
-            <tr>
-              <th className='col-num'>Order #</th>
-              <th className='col-customer'>Customer</th>
-              <th className='col-flatno'>Flat #</th>
-              <th className='col-date'>Date</th>
-              <th className='col-qty'>Qty</th>
-              <th className='col-total'>Total</th>
-              {showPaid && <th className='col-paid'>Paid</th>}
-              <th className='col-action'>Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            {groups.map(group => (
-              <Fragment key={group.flatName}>
-                <tr className='ll-flat-row'>
-                  <td colSpan={colSpan}>
-                    {group.flatName}
-                    <span className='ll-flat-count'>({group.items.length})</span>
-                  </td>
-                </tr>
-                {group.items.map(order => (
-                  <tr key={order.fileName}>
-                    <td className='col-num'>
-                      <a className='ll-number-link' href={`/order?fileName=${encodeURIComponent(order.fileName)}`}>
-                        {order.orderNumber || '—'}
-                      </a>
-                    </td>
-                    <td className='col-customer'>{order.customerName || '—'}</td>
-                    <td className='col-flatno'>{order.flatNumber || '—'}</td>
-                    <td className='col-date'>{order.date || '—'}</td>
-                    <td className='col-qty'>{orderTotalQty(order)}</td>
-                    <td className='col-total'>₹ {Number(order.total || 0).toFixed(2)}</td>
-                    {showPaid && (
-                      <td className='col-paid'>
-                        <span className={`ll-paid-badge ${order.paid ? 'is-paid' : 'is-unpaid'}`}>
-                          {order.paid ? 'Paid' : 'Not Yet'}
-                        </span>
-                      </td>
-                    )}
-                    <td className='col-action'>
-                      <div className='ll-actions'>
-                        <button
-                          type='button'
-                          className='ll-btn secondary ll-icon-btn'
-                          onClick={() => deleteOrder(order.fileName)}
-                          aria-label='Delete order'
-                          title='Delete'
-                        >
-                          <svg viewBox='0 0 24 24' width='16' height='16' aria-hidden='true' focusable='false'>
-                            <path fill='currentColor' d='M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z' />
-                          </svg>
-                        </button>
-                      </div>
+      <>
+        <div className='ll-table-scroll ll-desktop-only'>
+          <table className='ll-table'>
+            <thead>
+              <tr>
+                <th className='col-num'>Order #</th>
+                <th className='col-customer'>Customer</th>
+                <th className='col-flatno'>Flat #</th>
+                <th className='col-date'>Date</th>
+                <th className='col-qty'>Qty</th>
+                <th className='col-total'>Total</th>
+                {showPaid && <th className='col-paid'>Paid</th>}
+                <th className='col-action'>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {groups.map(group => (
+                <Fragment key={group.flatName}>
+                  <tr className='ll-flat-row'>
+                    <td colSpan={colSpan}>
+                      {group.flatName}
+                      <span className='ll-flat-count'>({group.items.length})</span>
                     </td>
                   </tr>
+                  {group.items.map(order => (
+                    <tr key={order.fileName}>
+                      <td className='col-num'>
+                        <a className='ll-number-link' href={`/order?fileName=${encodeURIComponent(order.fileName)}`}>
+                          {order.orderNumber || '—'}
+                        </a>
+                      </td>
+                      <td className='col-customer'>{order.customerName || '—'}</td>
+                      <td className='col-flatno'>{order.flatNumber || '—'}</td>
+                      <td className='col-date'>{order.date || '—'}</td>
+                      <td className='col-qty'>{orderTotalQty(order)}</td>
+                      <td className='col-total'>₹ {Number(order.total || 0).toFixed(2)}</td>
+                      {showPaid && (
+                        <td className='col-paid'>
+                          <PaidBadge paid={order.paid} />
+                        </td>
+                      )}
+                      <td className='col-action'>
+                        <div className='ll-actions'>
+                          <DeleteIconButton label='Delete order' onClick={() => deleteOrder(order.fileName)} />
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </Fragment>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        <div className='ll-mobile-list ll-mobile-only'>
+          {groups.map(group => (
+            <div className='ll-mobile-group' key={group.flatName}>
+              <div className='ll-mobile-group-title'>
+                {group.flatName}
+                <span className='ll-flat-count'>({group.items.length})</span>
+              </div>
+              <div className='ll-mobile-cards'>
+                {group.items.map(order => (
+                  <article className='ll-mobile-card' key={order.fileName}>
+                    <div className='ll-mobile-card-top'>
+                      <a className='ll-number-link' href={`/order?fileName=${encodeURIComponent(order.fileName)}`}>
+                        #{order.orderNumber || '—'}
+                      </a>
+                      <DeleteIconButton label='Delete order' onClick={() => deleteOrder(order.fileName)} />
+                    </div>
+                    <div className='ll-mobile-card-name'>{order.customerName || '—'}</div>
+                    <div className='ll-mobile-card-meta'>
+                      <span>Flat {order.flatNumber || '—'}</span>
+                      <span>{order.date || '—'}</span>
+                      <span>Qty {orderTotalQty(order)}</span>
+                    </div>
+                    <div className='ll-mobile-card-bottom'>
+                      <strong>₹ {Number(order.total || 0).toFixed(2)}</strong>
+                      {showPaid && <PaidBadge paid={order.paid} />}
+                    </div>
+                  </article>
                 ))}
-              </Fragment>
-            ))}
-          </tbody>
-        </table>
-      </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </>
     );
   }
 
@@ -248,70 +295,93 @@ export default function Home() {
     const colSpan = showPaid ? 8 : 7;
     const groups = groupByFlatName(list);
     return (
-      <div className='ll-table-scroll'>
-        <table className='ll-table'>
-          <thead>
-            <tr>
-              <th className='col-num'>Bill #</th>
-              <th className='col-customer'>Customer</th>
-              <th className='col-flatno'>Flat #</th>
-              <th className='col-date'>Date</th>
-              <th className='col-qty'>Qty</th>
-              <th className='col-total'>Total</th>
-              {showPaid && <th className='col-paid'>Paid</th>}
-              <th className='col-action'>Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            {groups.map(group => (
-              <Fragment key={group.flatName}>
-                <tr className='ll-flat-row'>
-                  <td colSpan={colSpan}>
-                    {group.flatName}
-                    <span className='ll-flat-count'>({group.items.length})</span>
-                  </td>
-                </tr>
-                {group.items.map(bill => (
-                  <tr key={bill.fileName}>
-                    <td className='col-num'>
-                      <a className='ll-number-link' href={`/bill?fileName=${encodeURIComponent(bill.fileName)}`}>
-                        {bill.billNumber || '—'}
-                      </a>
-                    </td>
-                    <td className='col-customer'>{bill.customerName || '—'}</td>
-                    <td className='col-flatno'>{bill.flatNumber || '—'}</td>
-                    <td className='col-date'>{bill.date || '—'}</td>
-                    <td className='col-qty'>{billTotalQty(bill)}</td>
-                    <td className='col-total'>₹ {Number(bill.total || 0).toFixed(2)}</td>
-                    {showPaid && (
-                      <td className='col-paid'>
-                        <span className={`ll-paid-badge ${bill.paid ? 'is-paid' : 'is-unpaid'}`}>
-                          {bill.paid ? 'Paid' : 'Not Yet'}
-                        </span>
-                      </td>
-                    )}
-                    <td className='col-action'>
-                      <div className='ll-actions'>
-                        <button
-                          type='button'
-                          className='ll-btn secondary ll-icon-btn'
-                          onClick={() => deleteBill(bill.fileName)}
-                          aria-label='Delete bill'
-                          title='Delete'
-                        >
-                          <svg viewBox='0 0 24 24' width='16' height='16' aria-hidden='true' focusable='false'>
-                            <path fill='currentColor' d='M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z' />
-                          </svg>
-                        </button>
-                      </div>
+      <>
+        <div className='ll-table-scroll ll-desktop-only'>
+          <table className='ll-table'>
+            <thead>
+              <tr>
+                <th className='col-num'>Bill #</th>
+                <th className='col-customer'>Customer</th>
+                <th className='col-flatno'>Flat #</th>
+                <th className='col-date'>Date</th>
+                <th className='col-qty'>Qty</th>
+                <th className='col-total'>Total</th>
+                {showPaid && <th className='col-paid'>Paid</th>}
+                <th className='col-action'>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {groups.map(group => (
+                <Fragment key={group.flatName}>
+                  <tr className='ll-flat-row'>
+                    <td colSpan={colSpan}>
+                      {group.flatName}
+                      <span className='ll-flat-count'>({group.items.length})</span>
                     </td>
                   </tr>
+                  {group.items.map(bill => (
+                    <tr key={bill.fileName}>
+                      <td className='col-num'>
+                        <a className='ll-number-link' href={`/bill?fileName=${encodeURIComponent(bill.fileName)}`}>
+                          {bill.billNumber || '—'}
+                        </a>
+                      </td>
+                      <td className='col-customer'>{bill.customerName || '—'}</td>
+                      <td className='col-flatno'>{bill.flatNumber || '—'}</td>
+                      <td className='col-date'>{bill.date || '—'}</td>
+                      <td className='col-qty'>{billTotalQty(bill)}</td>
+                      <td className='col-total'>₹ {Number(bill.total || 0).toFixed(2)}</td>
+                      {showPaid && (
+                        <td className='col-paid'>
+                          <PaidBadge paid={bill.paid} />
+                        </td>
+                      )}
+                      <td className='col-action'>
+                        <div className='ll-actions'>
+                          <DeleteIconButton label='Delete bill' onClick={() => deleteBill(bill.fileName)} />
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </Fragment>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        <div className='ll-mobile-list ll-mobile-only'>
+          {groups.map(group => (
+            <div className='ll-mobile-group' key={group.flatName}>
+              <div className='ll-mobile-group-title'>
+                {group.flatName}
+                <span className='ll-flat-count'>({group.items.length})</span>
+              </div>
+              <div className='ll-mobile-cards'>
+                {group.items.map(bill => (
+                  <article className='ll-mobile-card' key={bill.fileName}>
+                    <div className='ll-mobile-card-top'>
+                      <a className='ll-number-link' href={`/bill?fileName=${encodeURIComponent(bill.fileName)}`}>
+                        #{bill.billNumber || '—'}
+                      </a>
+                      <DeleteIconButton label='Delete bill' onClick={() => deleteBill(bill.fileName)} />
+                    </div>
+                    <div className='ll-mobile-card-name'>{bill.customerName || '—'}</div>
+                    <div className='ll-mobile-card-meta'>
+                      <span>Flat {bill.flatNumber || '—'}</span>
+                      <span>{bill.date || '—'}</span>
+                      <span>Qty {billTotalQty(bill)}</span>
+                    </div>
+                    <div className='ll-mobile-card-bottom'>
+                      <strong>₹ {Number(bill.total || 0).toFixed(2)}</strong>
+                      {showPaid && <PaidBadge paid={bill.paid} />}
+                    </div>
+                  </article>
                 ))}
-              </Fragment>
-            ))}
-          </tbody>
-        </table>
-      </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </>
     );
   }
 
