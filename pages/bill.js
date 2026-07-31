@@ -247,7 +247,7 @@ export default function BillPage() {
               </div>
               <div className='field'>
                 <label>Status</label>
-                <div className='status-pill'>{`${status === 'delivered' ? 'Delivered' : 'Draft'} · ${paid ? 'Paid' : 'Not Paid Yet'}`}</div>
+                <div className='status-pill'>{`${status === 'delivered' ? 'Delivered' : 'Draft'} · ${paid ? 'Paid' : 'Not Yet'}`}</div>
               </div>
               <div className='field'>
                 <label>Customer Name</label>
@@ -329,7 +329,7 @@ export default function BillPage() {
                   <p>Bill / Delivery receipt</p>
                 </div>
               </div>
-              <div className='status-pill'>{`${status === 'delivered' ? 'Delivered' : 'Draft'} · ${paid ? 'Paid' : 'Not Paid Yet'}`}</div>
+              <div className='status-pill'>{`${status === 'delivered' ? 'Delivered' : 'Draft'} · ${paid ? 'Paid' : 'Not Yet'}`}</div>
             </div>
 
             <div className='invoice-meta'>

@@ -290,6 +290,28 @@ a.ll-btn.secondary {
   font-size: 13px;
 }
 
+.ll-actions .ll-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  min-width: 36px;
+  padding: 0;
+  color: #c62828;
+  border-color: #f2c7c7;
+  background: #fff;
+}
+
+.ll-actions .ll-icon-btn:hover {
+  background: #ffebee;
+  border-color: #ef9a9a;
+  color: #b71c1c;
+}
+
+.ll-actions .ll-icon-btn svg {
+  display: block;
+}
+
 .ll-number-link {
   color: #2e7d32 !important;
   font-weight: 700;
@@ -387,12 +409,17 @@ a.ll-btn.secondary {
   }
 
   .ll-actions {
-    flex-direction: column;
-    align-items: stretch;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
   }
 
   .ll-actions .ll-btn {
-    width: 100%;
+    width: auto;
+  }
+
+  .ll-actions .ll-icon-btn {
+    width: 36px;
   }
 
   .ll-table th,

@@ -208,13 +208,23 @@ export default function Home() {
                     {showPaid && (
                       <td className='col-paid'>
                         <span className={`ll-paid-badge ${order.paid ? 'is-paid' : 'is-unpaid'}`}>
-                          {order.paid ? 'Paid' : 'Not Paid Yet'}
+                          {order.paid ? 'Paid' : 'Not Yet'}
                         </span>
                       </td>
                     )}
                     <td className='col-action'>
                       <div className='ll-actions'>
-                        <button type='button' className='ll-btn secondary' onClick={() => deleteOrder(order.fileName)}>Delete</button>
+                        <button
+                          type='button'
+                          className='ll-btn secondary ll-icon-btn'
+                          onClick={() => deleteOrder(order.fileName)}
+                          aria-label='Delete order'
+                          title='Delete'
+                        >
+                          <svg viewBox='0 0 24 24' width='16' height='16' aria-hidden='true' focusable='false'>
+                            <path fill='currentColor' d='M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z' />
+                          </svg>
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -276,13 +286,23 @@ export default function Home() {
                     {showPaid && (
                       <td className='col-paid'>
                         <span className={`ll-paid-badge ${bill.paid ? 'is-paid' : 'is-unpaid'}`}>
-                          {bill.paid ? 'Paid' : 'Not Paid Yet'}
+                          {bill.paid ? 'Paid' : 'Not Yet'}
                         </span>
                       </td>
                     )}
                     <td className='col-action'>
                       <div className='ll-actions'>
-                        <button type='button' className='ll-btn secondary' onClick={() => deleteBill(bill.fileName)}>Delete</button>
+                        <button
+                          type='button'
+                          className='ll-btn secondary ll-icon-btn'
+                          onClick={() => deleteBill(bill.fileName)}
+                          aria-label='Delete bill'
+                          title='Delete'
+                        >
+                          <svg viewBox='0 0 24 24' width='16' height='16' aria-hidden='true' focusable='false'>
+                            <path fill='currentColor' d='M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z' />
+                          </svg>
+                        </button>
                       </div>
                     </td>
                   </tr>
