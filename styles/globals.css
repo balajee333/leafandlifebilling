@@ -232,13 +232,52 @@ a.ll-btn.secondary {
   color: #1b5e20;
   font-weight: 700;
   font-size: 14px;
-  padding-top: 10px;
-  padding-bottom: 10px;
+  padding: 0;
   border-bottom: 1px solid #d5e5d8;
 }
 
+.ll-flat-toggle,
+.ll-mobile-group-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  margin: 0;
+  padding: 10px 12px;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.ll-flat-toggle:hover,
+.ll-mobile-group-title:hover {
+  background: #e4f0e6;
+}
+
+.ll-flat-chevron {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: transform 0.15s ease;
+  color: #2e7d32;
+}
+
+.ll-flat-chevron.is-open {
+  transform: rotate(90deg);
+}
+
+.ll-flat-name {
+  min-width: 0;
+}
+
 .ll-flat-count {
-  margin-left: 8px;
+  margin-left: 2px;
   font-weight: 600;
   font-size: 13px;
   color: #4a6b50;
@@ -371,9 +410,17 @@ a.ll-btn.secondary {
   color: #1b5e20;
   font-weight: 700;
   font-size: 14px;
-  padding: 10px 12px;
   border-radius: 10px;
+  margin-bottom: 0;
+}
+
+.ll-mobile-group.is-open .ll-mobile-group-title {
   margin-bottom: 8px;
+  border-radius: 10px 10px 0 0;
+}
+
+.ll-mobile-group.is-collapsed .ll-mobile-group-title {
+  margin-bottom: 0;
 }
 
 .ll-mobile-cards {

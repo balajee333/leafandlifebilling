@@ -26,6 +26,20 @@ function PaidBadge({ paid }) {
   );
 }
 
+function FlatToggleLabel({ flatName, count, open }) {
+  return (
+    <>
+      <span className={`ll-flat-chevron ${open ? 'is-open' : ''}`} aria-hidden='true'>
+        <svg viewBox='0 0 24 24' width='16' height='16' focusable='false'>
+          <path fill='currentColor' d='M9.29 6.71a1 1 0 0 0 0 1.41L13.17 12l-3.88 3.88a1 1 0 1 0 1.41 1.41l4.59-4.59a1 1 0 0 0 0-1.41L10.7 6.7a1 1 0 0 0-1.41.01z' />
+        </svg>
+      </span>
+      <span className='ll-flat-name'>{flatName}</span>
+      <span className='ll-flat-count'>({count})</span>
+    </>
+  );
+}
+
 export default function Home() {
   const router = useRouter();
   const [tab, setTab] = useState('orders');
@@ -33,6 +47,25 @@ export default function Home() {
   const [drafts, setDrafts] = useState([]);
   const [delivered, setDelivered] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [collapsedFlats, setCollapsedFlats] = useState(() => new Set());
+
+  function flatGroupKey(sectionId, flatName) {
+    return `${sectionId}::${flatName}`;
+  }
+
+  function isFlatOpen(sectionId, flatName) {
+    return !collapsedFlats.has(flatGroupKey(sectionId, flatName));
+  }
+
+  function toggleFlat(sectionId, flatName) {
+    const key = flatGroupKey(sectionId, flatName);
+    setCollapsedFlats(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  }
 
   useEffect(() => {
     loadAll();
@@ -183,7 +216,7 @@ export default function Home() {
       }));
   }
 
-  function renderOrdersTable(list, emptyMessage, { showPaid = false } = {}) {
+  function renderOrdersTable(list, emptyMessage, { showPaid = false, sectionId = 'orders' } = {}) {
     if (loading) {
       return <p className='ll-empty'>Loading orders…</p>;
     }
@@ -210,81 +243,99 @@ export default function Home() {
               </tr>
             </thead>
             <tbody>
-              {groups.map(group => (
-                <Fragment key={group.flatName}>
-                  <tr className='ll-flat-row'>
-                    <td colSpan={colSpan}>
-                      {group.flatName}
-                      <span className='ll-flat-count'>({group.items.length})</span>
-                    </td>
-                  </tr>
-                  {group.items.map(order => (
-                    <tr key={order.fileName}>
-                      <td className='col-num'>
-                        <a className='ll-number-link' href={`/order?fileName=${encodeURIComponent(order.fileName)}`}>
-                          {order.orderNumber || '—'}
-                        </a>
-                      </td>
-                      <td className='col-customer'>{order.customerName || '—'}</td>
-                      <td className='col-flatno'>{order.flatNumber || '—'}</td>
-                      <td className='col-date'>{order.date || '—'}</td>
-                      <td className='col-qty'>{orderTotalQty(order)}</td>
-                      <td className='col-total'>₹ {Number(order.total || 0).toFixed(2)}</td>
-                      {showPaid && (
-                        <td className='col-paid'>
-                          <PaidBadge paid={order.paid} />
-                        </td>
-                      )}
-                      <td className='col-action'>
-                        <div className='ll-actions'>
-                          <DeleteIconButton label='Delete order' onClick={() => deleteOrder(order.fileName)} />
-                        </div>
+              {groups.map(group => {
+                const open = isFlatOpen(sectionId, group.flatName);
+                return (
+                  <Fragment key={group.flatName}>
+                    <tr className={`ll-flat-row ${open ? 'is-open' : 'is-collapsed'}`}>
+                      <td colSpan={colSpan}>
+                        <button
+                          type='button'
+                          className='ll-flat-toggle'
+                          aria-expanded={open}
+                          onClick={() => toggleFlat(sectionId, group.flatName)}
+                        >
+                          <FlatToggleLabel flatName={group.flatName} count={group.items.length} open={open} />
+                        </button>
                       </td>
                     </tr>
-                  ))}
-                </Fragment>
-              ))}
+                    {open && group.items.map(order => (
+                      <tr key={order.fileName}>
+                        <td className='col-num'>
+                          <a className='ll-number-link' href={`/order?fileName=${encodeURIComponent(order.fileName)}`}>
+                            {order.orderNumber || '—'}
+                          </a>
+                        </td>
+                        <td className='col-customer'>{order.customerName || '—'}</td>
+                        <td className='col-flatno'>{order.flatNumber || '—'}</td>
+                        <td className='col-date'>{order.date || '—'}</td>
+                        <td className='col-qty'>{orderTotalQty(order)}</td>
+                        <td className='col-total'>₹ {Number(order.total || 0).toFixed(2)}</td>
+                        {showPaid && (
+                          <td className='col-paid'>
+                            <PaidBadge paid={order.paid} />
+                          </td>
+                        )}
+                        <td className='col-action'>
+                          <div className='ll-actions'>
+                            <DeleteIconButton label='Delete order' onClick={() => deleteOrder(order.fileName)} />
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </Fragment>
+                );
+              })}
             </tbody>
           </table>
         </div>
 
         <div className='ll-mobile-list ll-mobile-only'>
-          {groups.map(group => (
-            <div className='ll-mobile-group' key={group.flatName}>
-              <div className='ll-mobile-group-title'>
-                {group.flatName}
-                <span className='ll-flat-count'>({group.items.length})</span>
+          {groups.map(group => {
+            const open = isFlatOpen(sectionId, group.flatName);
+            return (
+              <div className={`ll-mobile-group ${open ? 'is-open' : 'is-collapsed'}`} key={group.flatName}>
+                <button
+                  type='button'
+                  className='ll-mobile-group-title'
+                  aria-expanded={open}
+                  onClick={() => toggleFlat(sectionId, group.flatName)}
+                >
+                  <FlatToggleLabel flatName={group.flatName} count={group.items.length} open={open} />
+                </button>
+                {open && (
+                  <div className='ll-mobile-cards'>
+                    {group.items.map(order => (
+                      <article className='ll-mobile-card' key={order.fileName}>
+                        <div className='ll-mobile-card-top'>
+                          <a className='ll-number-link' href={`/order?fileName=${encodeURIComponent(order.fileName)}`}>
+                            #{order.orderNumber || '—'}
+                          </a>
+                          <DeleteIconButton label='Delete order' onClick={() => deleteOrder(order.fileName)} />
+                        </div>
+                        <div className='ll-mobile-card-name'>{order.customerName || '—'}</div>
+                        <div className='ll-mobile-card-meta'>
+                          <span>Flat {order.flatNumber || '—'}</span>
+                          <span>{order.date || '—'}</span>
+                          <span>Qty {orderTotalQty(order)}</span>
+                        </div>
+                        <div className='ll-mobile-card-bottom'>
+                          <strong>₹ {Number(order.total || 0).toFixed(2)}</strong>
+                          {showPaid && <PaidBadge paid={order.paid} />}
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+                )}
               </div>
-              <div className='ll-mobile-cards'>
-                {group.items.map(order => (
-                  <article className='ll-mobile-card' key={order.fileName}>
-                    <div className='ll-mobile-card-top'>
-                      <a className='ll-number-link' href={`/order?fileName=${encodeURIComponent(order.fileName)}`}>
-                        #{order.orderNumber || '—'}
-                      </a>
-                      <DeleteIconButton label='Delete order' onClick={() => deleteOrder(order.fileName)} />
-                    </div>
-                    <div className='ll-mobile-card-name'>{order.customerName || '—'}</div>
-                    <div className='ll-mobile-card-meta'>
-                      <span>Flat {order.flatNumber || '—'}</span>
-                      <span>{order.date || '—'}</span>
-                      <span>Qty {orderTotalQty(order)}</span>
-                    </div>
-                    <div className='ll-mobile-card-bottom'>
-                      <strong>₹ {Number(order.total || 0).toFixed(2)}</strong>
-                      {showPaid && <PaidBadge paid={order.paid} />}
-                    </div>
-                  </article>
-                ))}
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </>
     );
   }
 
-  function renderBillsTable(list, emptyMessage, { showPaid = false } = {}) {
+  function renderBillsTable(list, emptyMessage, { showPaid = false, sectionId = 'bills' } = {}) {
     if (loading) {
       return <p className='ll-empty'>Loading bills…</p>;
     }
@@ -311,75 +362,93 @@ export default function Home() {
               </tr>
             </thead>
             <tbody>
-              {groups.map(group => (
-                <Fragment key={group.flatName}>
-                  <tr className='ll-flat-row'>
-                    <td colSpan={colSpan}>
-                      {group.flatName}
-                      <span className='ll-flat-count'>({group.items.length})</span>
-                    </td>
-                  </tr>
-                  {group.items.map(bill => (
-                    <tr key={bill.fileName}>
-                      <td className='col-num'>
-                        <a className='ll-number-link' href={`/bill?fileName=${encodeURIComponent(bill.fileName)}`}>
-                          {bill.billNumber || '—'}
-                        </a>
-                      </td>
-                      <td className='col-customer'>{bill.customerName || '—'}</td>
-                      <td className='col-flatno'>{bill.flatNumber || '—'}</td>
-                      <td className='col-date'>{bill.date || '—'}</td>
-                      <td className='col-qty'>{billTotalQty(bill)}</td>
-                      <td className='col-total'>₹ {Number(bill.total || 0).toFixed(2)}</td>
-                      {showPaid && (
-                        <td className='col-paid'>
-                          <PaidBadge paid={bill.paid} />
-                        </td>
-                      )}
-                      <td className='col-action'>
-                        <div className='ll-actions'>
-                          <DeleteIconButton label='Delete bill' onClick={() => deleteBill(bill.fileName)} />
-                        </div>
+              {groups.map(group => {
+                const open = isFlatOpen(sectionId, group.flatName);
+                return (
+                  <Fragment key={group.flatName}>
+                    <tr className={`ll-flat-row ${open ? 'is-open' : 'is-collapsed'}`}>
+                      <td colSpan={colSpan}>
+                        <button
+                          type='button'
+                          className='ll-flat-toggle'
+                          aria-expanded={open}
+                          onClick={() => toggleFlat(sectionId, group.flatName)}
+                        >
+                          <FlatToggleLabel flatName={group.flatName} count={group.items.length} open={open} />
+                        </button>
                       </td>
                     </tr>
-                  ))}
-                </Fragment>
-              ))}
+                    {open && group.items.map(bill => (
+                      <tr key={bill.fileName}>
+                        <td className='col-num'>
+                          <a className='ll-number-link' href={`/bill?fileName=${encodeURIComponent(bill.fileName)}`}>
+                            {bill.billNumber || '—'}
+                          </a>
+                        </td>
+                        <td className='col-customer'>{bill.customerName || '—'}</td>
+                        <td className='col-flatno'>{bill.flatNumber || '—'}</td>
+                        <td className='col-date'>{bill.date || '—'}</td>
+                        <td className='col-qty'>{billTotalQty(bill)}</td>
+                        <td className='col-total'>₹ {Number(bill.total || 0).toFixed(2)}</td>
+                        {showPaid && (
+                          <td className='col-paid'>
+                            <PaidBadge paid={bill.paid} />
+                          </td>
+                        )}
+                        <td className='col-action'>
+                          <div className='ll-actions'>
+                            <DeleteIconButton label='Delete bill' onClick={() => deleteBill(bill.fileName)} />
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </Fragment>
+                );
+              })}
             </tbody>
           </table>
         </div>
 
         <div className='ll-mobile-list ll-mobile-only'>
-          {groups.map(group => (
-            <div className='ll-mobile-group' key={group.flatName}>
-              <div className='ll-mobile-group-title'>
-                {group.flatName}
-                <span className='ll-flat-count'>({group.items.length})</span>
+          {groups.map(group => {
+            const open = isFlatOpen(sectionId, group.flatName);
+            return (
+              <div className={`ll-mobile-group ${open ? 'is-open' : 'is-collapsed'}`} key={group.flatName}>
+                <button
+                  type='button'
+                  className='ll-mobile-group-title'
+                  aria-expanded={open}
+                  onClick={() => toggleFlat(sectionId, group.flatName)}
+                >
+                  <FlatToggleLabel flatName={group.flatName} count={group.items.length} open={open} />
+                </button>
+                {open && (
+                  <div className='ll-mobile-cards'>
+                    {group.items.map(bill => (
+                      <article className='ll-mobile-card' key={bill.fileName}>
+                        <div className='ll-mobile-card-top'>
+                          <a className='ll-number-link' href={`/bill?fileName=${encodeURIComponent(bill.fileName)}`}>
+                            #{bill.billNumber || '—'}
+                          </a>
+                          <DeleteIconButton label='Delete bill' onClick={() => deleteBill(bill.fileName)} />
+                        </div>
+                        <div className='ll-mobile-card-name'>{bill.customerName || '—'}</div>
+                        <div className='ll-mobile-card-meta'>
+                          <span>Flat {bill.flatNumber || '—'}</span>
+                          <span>{bill.date || '—'}</span>
+                          <span>Qty {billTotalQty(bill)}</span>
+                        </div>
+                        <div className='ll-mobile-card-bottom'>
+                          <strong>₹ {Number(bill.total || 0).toFixed(2)}</strong>
+                          {showPaid && <PaidBadge paid={bill.paid} />}
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+                )}
               </div>
-              <div className='ll-mobile-cards'>
-                {group.items.map(bill => (
-                  <article className='ll-mobile-card' key={bill.fileName}>
-                    <div className='ll-mobile-card-top'>
-                      <a className='ll-number-link' href={`/bill?fileName=${encodeURIComponent(bill.fileName)}`}>
-                        #{bill.billNumber || '—'}
-                      </a>
-                      <DeleteIconButton label='Delete bill' onClick={() => deleteBill(bill.fileName)} />
-                    </div>
-                    <div className='ll-mobile-card-name'>{bill.customerName || '—'}</div>
-                    <div className='ll-mobile-card-meta'>
-                      <span>Flat {bill.flatNumber || '—'}</span>
-                      <span>{bill.date || '—'}</span>
-                      <span>Qty {billTotalQty(bill)}</span>
-                    </div>
-                    <div className='ll-mobile-card-bottom'>
-                      <strong>₹ {Number(bill.total || 0).toFixed(2)}</strong>
-                      {showPaid && <PaidBadge paid={bill.paid} />}
-                    </div>
-                  </article>
-                ))}
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </>
     );
@@ -421,30 +490,30 @@ export default function Home() {
           <div className='ll-grid'>
             <section className='ll-panel'>
               <h2>Not Delivered</h2>
-              {renderOrdersTable(notDeliveredOrders, 'No undelivered orders.', { showPaid: true })}
+              {renderOrdersTable(notDeliveredOrders, 'No undelivered orders.', { showPaid: true, sectionId: 'orders-not-delivered' })}
             </section>
             <section className='ll-panel'>
               <h2>Delivered · Not Paid</h2>
-              {renderOrdersTable(deliveredUnpaidOrders, 'No delivered unpaid orders.')}
+              {renderOrdersTable(deliveredUnpaidOrders, 'No delivered unpaid orders.', { sectionId: 'orders-delivered-unpaid' })}
             </section>
             <section className='ll-panel'>
               <h2>Delivered · Paid</h2>
-              {renderOrdersTable(deliveredPaidOrders, 'No delivered paid orders.')}
+              {renderOrdersTable(deliveredPaidOrders, 'No delivered paid orders.', { sectionId: 'orders-delivered-paid' })}
             </section>
           </div>
         ) : (
           <div className='ll-grid'>
             <section className='ll-panel'>
               <h2>Not Delivered</h2>
-              {renderBillsTable(notDeliveredBills, 'No undelivered bills.', { showPaid: true })}
+              {renderBillsTable(notDeliveredBills, 'No undelivered bills.', { showPaid: true, sectionId: 'bills-not-delivered' })}
             </section>
             <section className='ll-panel'>
               <h2>Delivered · Not Paid</h2>
-              {renderBillsTable(deliveredUnpaidBills, 'No delivered unpaid bills.')}
+              {renderBillsTable(deliveredUnpaidBills, 'No delivered unpaid bills.', { sectionId: 'bills-delivered-unpaid' })}
             </section>
             <section className='ll-panel'>
               <h2>Delivered · Paid</h2>
-              {renderBillsTable(deliveredPaidBills, 'No delivered paid bills.')}
+              {renderBillsTable(deliveredPaidBills, 'No delivered paid bills.', { sectionId: 'bills-delivered-paid' })}
             </section>
           </div>
         )}
