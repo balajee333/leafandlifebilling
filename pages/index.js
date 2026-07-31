@@ -98,7 +98,8 @@ export default function Home() {
 
   useEffect(() => {
     if (!router.isReady) return;
-    const nextTab = router.query.tab === 'bills' ? 'bills' : 'orders';
+    const q = router.query.tab;
+    const nextTab = q === 'bills' || q === 'past' ? q : 'orders';
     setTab(nextTab);
   }, [router.isReady, router.query.tab]);
 
@@ -191,7 +192,14 @@ export default function Home() {
   );
 
   const deliveredPaidOrders = useMemo(
-    () => orders.filter(order => order.status === 'delivered' && order.paid),
+    () => orders
+      .filter(order => order.status === 'delivered' && order.paid)
+      .slice()
+      .sort((a, b) => {
+        const aTime = new Date(a.deliveredAt || a.updatedAt || a.createdAt || 0).getTime();
+        const bTime = new Date(b.deliveredAt || b.updatedAt || b.createdAt || 0).getTime();
+        return bTime - aTime;
+      }),
     [orders]
   );
 
@@ -222,26 +230,39 @@ export default function Home() {
     return bill.items.reduce((sum, item) => sum + Number(item.qty || 0), 0);
   }
 
-  function groupByFlatName(list) {
+  function groupByFlatName(list, { sortBy = 'updated' } = {}) {
     const groups = new Map();
     for (const item of list) {
       const key = (item.flatName || '').trim() || 'No flat name';
       if (!groups.has(key)) groups.set(key, []);
       groups.get(key).push(item);
     }
+
+    function itemTime(item) {
+      if (sortBy === 'delivered') {
+        return new Date(item.deliveredAt || item.updatedAt || item.createdAt || 0).getTime();
+      }
+      return new Date(item.updatedAt || item.createdAt || 0).getTime();
+    }
+
     return Array.from(groups.entries())
-      .sort((a, b) => {
-        if (a[0] === 'No flat name') return 1;
-        if (b[0] === 'No flat name') return -1;
-        return a[0].localeCompare(b[0], undefined, { sensitivity: 'base' });
-      })
       .map(([flatName, items]) => ({
         flatName,
-        items: items.slice().sort((a, b) => new Date(b.updatedAt || b.createdAt || 0) - new Date(a.updatedAt || a.createdAt || 0))
-      }));
+        items: items.slice().sort((a, b) => itemTime(b) - itemTime(a))
+      }))
+      .sort((a, b) => {
+        if (sortBy === 'delivered') {
+          const aNewest = a.items[0] ? itemTime(a.items[0]) : 0;
+          const bNewest = b.items[0] ? itemTime(b.items[0]) : 0;
+          return bNewest - aNewest;
+        }
+        if (a.flatName === 'No flat name') return 1;
+        if (b.flatName === 'No flat name') return -1;
+        return a.flatName.localeCompare(b.flatName, undefined, { sensitivity: 'base' });
+      });
   }
 
-  function renderOrdersTable(list, emptyMessage, { showPaid = false, sectionId = 'orders' } = {}) {
+  function renderOrdersTable(list, emptyMessage, { showPaid = false, sectionId = 'orders', sortBy = 'updated' } = {}) {
     if (loading) {
       return <p className='ll-empty'>Loading orders…</p>;
     }
@@ -250,7 +271,7 @@ export default function Home() {
     }
 
     const colSpan = showPaid ? 8 : 7;
-    const groups = groupByFlatName(list);
+    const groups = groupByFlatName(list, { sortBy });
     return (
       <>
         <div className='ll-table-scroll ll-desktop-only'>
@@ -495,10 +516,10 @@ export default function Home() {
             </div>
           </div>
           <div className='ll-top-actions'>
-            {tab === 'orders' ? (
-              <a className='ll-btn' href='/order'>Create New Order</a>
-            ) : (
+            {tab === 'bills' ? (
               <a className='ll-btn' href='/bill'>Create New Bill</a>
+            ) : (
+              <a className='ll-btn' href='/order'>Create New Order</a>
             )}
             <button type='button' className='ll-btn' onClick={loadAll}>Refresh</button>
           </div>
@@ -507,6 +528,7 @@ export default function Home() {
         <div className='ll-tabs'>
           <button type='button' className={tab === 'orders' ? 'll-tab active' : 'll-tab'} onClick={() => selectTab('orders')}>Orders</button>
           <button type='button' className={tab === 'bills' ? 'll-tab active' : 'll-tab'} onClick={() => selectTab('bills')}>Bills</button>
+          <button type='button' className={tab === 'past' ? 'll-tab active' : 'll-tab'} onClick={() => selectTab('past')}>Past Orders</button>
         </div>
 
         {tab === 'orders' ? (
@@ -519,12 +541,8 @@ export default function Home() {
               <h2>Delivered · Not Paid <span className='ll-section-count'>({deliveredUnpaidOrders.length})</span></h2>
               {renderOrdersTable(deliveredUnpaidOrders, 'No delivered unpaid orders.', { sectionId: 'orders-delivered-unpaid' })}
             </section>
-            <section className='ll-panel'>
-              <h2>Delivered · Paid <span className='ll-section-count'>({deliveredPaidOrders.length})</span></h2>
-              {renderOrdersTable(deliveredPaidOrders, 'No delivered paid orders.', { sectionId: 'orders-delivered-paid' })}
-            </section>
           </div>
-        ) : (
+        ) : tab === 'bills' ? (
           <div className='ll-grid'>
             <section className='ll-panel'>
               <h2>Not Delivered <span className='ll-section-count'>({notDeliveredBills.length})</span></h2>
@@ -537,6 +555,13 @@ export default function Home() {
             <section className='ll-panel'>
               <h2>Delivered · Paid <span className='ll-section-count'>({deliveredPaidBills.length})</span></h2>
               {renderBillsTable(deliveredPaidBills, 'No delivered paid bills.', { sectionId: 'bills-delivered-paid' })}
+            </section>
+          </div>
+        ) : (
+          <div className='ll-grid'>
+            <section className='ll-panel'>
+              <h2>Past Orders <span className='ll-section-count'>({deliveredPaidOrders.length})</span></h2>
+              {renderOrdersTable(deliveredPaidOrders, 'No past orders yet.', { sectionId: 'orders-past', sortBy: 'delivered' })}
             </section>
           </div>
         )}
