@@ -434,10 +434,31 @@ a.ll-btn.secondary {
 }
 
 .ll-mobile-card {
+  position: relative;
   border: 1px solid #e0ebe2;
   border-radius: 12px;
-  padding: 12px;
   background: #fcfdfc;
+  overflow: hidden;
+}
+
+.ll-mobile-card-link {
+  display: block;
+  padding: 12px;
+  padding-right: 52px;
+  color: inherit;
+  text-decoration: none !important;
+}
+
+.ll-mobile-card-link:hover,
+.ll-mobile-card-link:focus-visible {
+  background: #f3faf4;
+}
+
+.ll-mobile-card-action {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 1;
 }
 
 .ll-mobile-card-top {
@@ -446,6 +467,11 @@ a.ll-btn.secondary {
   justify-content: space-between;
   gap: 10px;
   margin-bottom: 6px;
+}
+
+.ll-mobile-card-num {
+  color: #2e7d32;
+  font-weight: 700;
 }
 
 .ll-mobile-card-name {
@@ -474,6 +500,19 @@ a.ll-btn.secondary {
 .ll-mobile-card-bottom strong {
   font-size: 16px;
   color: #1b5e20;
+}
+
+.ll-data-row {
+  cursor: pointer;
+}
+
+.ll-data-row:hover {
+  background: #f6fbf6;
+}
+
+.ll-number-text {
+  color: #2e7d32;
+  font-weight: 700;
 }
 
 @media (max-width: 800px) {
@@ -596,8 +635,9 @@ a.ll-btn.secondary {
     margin-bottom: 10px;
   }
 
-  .ll-mobile-card {
+  .ll-mobile-card-link {
     padding: 12px;
+    padding-right: 52px;
   }
 
   .ll-mobile-card-name {

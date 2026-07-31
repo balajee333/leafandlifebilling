@@ -26,6 +26,31 @@ function PaidBadge({ paid }) {
   );
 }
 
+function MobileListCard({ href, numberLabel, name, meta, total, paidBadge, onDelete, deleteLabel }) {
+  return (
+    <article className='ll-mobile-card'>
+      <a className='ll-mobile-card-link' href={href}>
+        <div className='ll-mobile-card-top'>
+          <span className='ll-mobile-card-num'>{numberLabel}</span>
+        </div>
+        <div className='ll-mobile-card-name'>{name}</div>
+        <div className='ll-mobile-card-meta'>
+          {meta.map(item => (
+            <span key={item}>{item}</span>
+          ))}
+        </div>
+        <div className='ll-mobile-card-bottom'>
+          <strong>{total}</strong>
+          {paidBadge}
+        </div>
+      </a>
+      <div className='ll-mobile-card-action'>
+        <DeleteIconButton label={deleteLabel} onClick={onDelete} />
+      </div>
+    </article>
+  );
+}
+
 function FlatToggleLabel({ flatName, count, open }) {
   return (
     <>
@@ -260,11 +285,13 @@ export default function Home() {
                       </td>
                     </tr>
                     {open && group.items.map(order => (
-                      <tr key={order.fileName}>
+                      <tr
+                        key={order.fileName}
+                        className='ll-data-row'
+                        onClick={() => { window.location.href = `/order?fileName=${encodeURIComponent(order.fileName)}`; }}
+                      >
                         <td className='col-num'>
-                          <a className='ll-number-link' href={`/order?fileName=${encodeURIComponent(order.fileName)}`}>
-                            {order.orderNumber || '—'}
-                          </a>
+                          <span className='ll-number-text'>{order.orderNumber || '—'}</span>
                         </td>
                         <td className='col-customer'>{order.customerName || '—'}</td>
                         <td className='col-flatno'>{order.flatNumber || '—'}</td>
@@ -276,7 +303,7 @@ export default function Home() {
                             <PaidBadge paid={order.paid} />
                           </td>
                         )}
-                        <td className='col-action'>
+                        <td className='col-action' onClick={e => e.stopPropagation()}>
                           <div className='ll-actions'>
                             <DeleteIconButton label='Delete order' onClick={() => deleteOrder(order.fileName)} />
                           </div>
@@ -306,24 +333,21 @@ export default function Home() {
                 {open && (
                   <div className='ll-mobile-cards'>
                     {group.items.map(order => (
-                      <article className='ll-mobile-card' key={order.fileName}>
-                        <div className='ll-mobile-card-top'>
-                          <a className='ll-number-link' href={`/order?fileName=${encodeURIComponent(order.fileName)}`}>
-                            #{order.orderNumber || '—'}
-                          </a>
-                          <DeleteIconButton label='Delete order' onClick={() => deleteOrder(order.fileName)} />
-                        </div>
-                        <div className='ll-mobile-card-name'>{order.customerName || '—'}</div>
-                        <div className='ll-mobile-card-meta'>
-                          <span>Flat {order.flatNumber || '—'}</span>
-                          <span>{order.date || '—'}</span>
-                          <span>Qty {orderTotalQty(order)}</span>
-                        </div>
-                        <div className='ll-mobile-card-bottom'>
-                          <strong>₹ {Number(order.total || 0).toFixed(2)}</strong>
-                          {showPaid && <PaidBadge paid={order.paid} />}
-                        </div>
-                      </article>
+                      <MobileListCard
+                        key={order.fileName}
+                        href={`/order?fileName=${encodeURIComponent(order.fileName)}`}
+                        numberLabel={`#${order.orderNumber || '—'}`}
+                        name={order.customerName || '—'}
+                        meta={[
+                          `Flat ${order.flatNumber || '—'}`,
+                          order.date || '—',
+                          `Qty ${orderTotalQty(order)}`
+                        ]}
+                        total={`₹ ${Number(order.total || 0).toFixed(2)}`}
+                        paidBadge={showPaid ? <PaidBadge paid={order.paid} /> : null}
+                        deleteLabel='Delete order'
+                        onDelete={() => deleteOrder(order.fileName)}
+                      />
                     ))}
                   </div>
                 )}
@@ -379,11 +403,13 @@ export default function Home() {
                       </td>
                     </tr>
                     {open && group.items.map(bill => (
-                      <tr key={bill.fileName}>
+                      <tr
+                        key={bill.fileName}
+                        className='ll-data-row'
+                        onClick={() => { window.location.href = `/bill?fileName=${encodeURIComponent(bill.fileName)}`; }}
+                      >
                         <td className='col-num'>
-                          <a className='ll-number-link' href={`/bill?fileName=${encodeURIComponent(bill.fileName)}`}>
-                            {bill.billNumber || '—'}
-                          </a>
+                          <span className='ll-number-text'>{bill.billNumber || '—'}</span>
                         </td>
                         <td className='col-customer'>{bill.customerName || '—'}</td>
                         <td className='col-flatno'>{bill.flatNumber || '—'}</td>
@@ -395,7 +421,7 @@ export default function Home() {
                             <PaidBadge paid={bill.paid} />
                           </td>
                         )}
-                        <td className='col-action'>
+                        <td className='col-action' onClick={e => e.stopPropagation()}>
                           <div className='ll-actions'>
                             <DeleteIconButton label='Delete bill' onClick={() => deleteBill(bill.fileName)} />
                           </div>
@@ -425,24 +451,21 @@ export default function Home() {
                 {open && (
                   <div className='ll-mobile-cards'>
                     {group.items.map(bill => (
-                      <article className='ll-mobile-card' key={bill.fileName}>
-                        <div className='ll-mobile-card-top'>
-                          <a className='ll-number-link' href={`/bill?fileName=${encodeURIComponent(bill.fileName)}`}>
-                            #{bill.billNumber || '—'}
-                          </a>
-                          <DeleteIconButton label='Delete bill' onClick={() => deleteBill(bill.fileName)} />
-                        </div>
-                        <div className='ll-mobile-card-name'>{bill.customerName || '—'}</div>
-                        <div className='ll-mobile-card-meta'>
-                          <span>Flat {bill.flatNumber || '—'}</span>
-                          <span>{bill.date || '—'}</span>
-                          <span>Qty {billTotalQty(bill)}</span>
-                        </div>
-                        <div className='ll-mobile-card-bottom'>
-                          <strong>₹ {Number(bill.total || 0).toFixed(2)}</strong>
-                          {showPaid && <PaidBadge paid={bill.paid} />}
-                        </div>
-                      </article>
+                      <MobileListCard
+                        key={bill.fileName}
+                        href={`/bill?fileName=${encodeURIComponent(bill.fileName)}`}
+                        numberLabel={`#${bill.billNumber || '—'}`}
+                        name={bill.customerName || '—'}
+                        meta={[
+                          `Flat ${bill.flatNumber || '—'}`,
+                          bill.date || '—',
+                          `Qty ${billTotalQty(bill)}`
+                        ]}
+                        total={`₹ ${Number(bill.total || 0).toFixed(2)}`}
+                        paidBadge={showPaid ? <PaidBadge paid={bill.paid} /> : null}
+                        deleteLabel='Delete bill'
+                        onDelete={() => deleteBill(bill.fileName)}
+                      />
                     ))}
                   </div>
                 )}
