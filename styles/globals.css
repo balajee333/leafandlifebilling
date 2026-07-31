@@ -244,14 +244,28 @@ a.ll-btn.secondary {
   color: #4a6b50;
 }
 
-.ll-paid-yes {
-  color: #1b5e20;
-  font-weight: 600;
+.ll-paid-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
 }
 
-.ll-paid-no {
+.ll-paid-badge.is-paid {
+  background: #e6f4ea;
+  color: #1b5e20;
+  border: 1px solid #b7dfc0;
+}
+
+.ll-paid-badge.is-unpaid {
+  background: #fff4e5;
   color: #8a5a00;
-  font-weight: 600;
+  border: 1px solid #f0d4a0;
 }
 
 .ll-panel > .ll-empty {

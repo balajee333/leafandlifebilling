@@ -190,9 +190,7 @@ export default function Home() {
                 <tr className='ll-flat-row'>
                   <td colSpan={colSpan}>
                     {group.flatName}
-                    <span className='ll-flat-count'>
-                      {group.items.length} {group.items.length === 1 ? 'order' : 'orders'}
-                    </span>
+                    <span className='ll-flat-count'>({group.items.length})</span>
                   </td>
                 </tr>
                 {group.items.map(order => (
@@ -209,7 +207,7 @@ export default function Home() {
                     <td className='col-total'>₹ {Number(order.total || 0).toFixed(2)}</td>
                     {showPaid && (
                       <td className='col-paid'>
-                        <span className={order.paid ? 'll-paid-yes' : 'll-paid-no'}>
+                        <span className={`ll-paid-badge ${order.paid ? 'is-paid' : 'is-unpaid'}`}>
                           {order.paid ? 'Paid' : 'Not Paid Yet'}
                         </span>
                       </td>
@@ -260,9 +258,7 @@ export default function Home() {
                 <tr className='ll-flat-row'>
                   <td colSpan={colSpan}>
                     {group.flatName}
-                    <span className='ll-flat-count'>
-                      {group.items.length} {group.items.length === 1 ? 'bill' : 'bills'}
-                    </span>
+                    <span className='ll-flat-count'>({group.items.length})</span>
                   </td>
                 </tr>
                 {group.items.map(bill => (
@@ -279,7 +275,7 @@ export default function Home() {
                     <td className='col-total'>₹ {Number(bill.total || 0).toFixed(2)}</td>
                     {showPaid && (
                       <td className='col-paid'>
-                        <span className={bill.paid ? 'll-paid-yes' : 'll-paid-no'}>
+                        <span className={`ll-paid-badge ${bill.paid ? 'is-paid' : 'is-unpaid'}`}>
                           {bill.paid ? 'Paid' : 'Not Paid Yet'}
                         </span>
                       </td>
