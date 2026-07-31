@@ -237,6 +237,23 @@ a.ll-btn.secondary {
   border-bottom: 1px solid #d5e5d8;
 }
 
+.ll-flat-count {
+  margin-left: 8px;
+  font-weight: 600;
+  font-size: 13px;
+  color: #4a6b50;
+}
+
+.ll-paid-yes {
+  color: #1b5e20;
+  font-weight: 600;
+}
+
+.ll-paid-no {
+  color: #8a5a00;
+  font-weight: 600;
+}
+
 .ll-panel > .ll-empty {
   margin: 0;
 }

@@ -159,7 +159,7 @@ export default function Home() {
       }));
   }
 
-  function renderOrdersTable(list, emptyMessage) {
+  function renderOrdersTable(list, emptyMessage, { showPaid = false } = {}) {
     if (loading) {
       return <p className='ll-empty'>Loading orders…</p>;
     }
@@ -167,6 +167,7 @@ export default function Home() {
       return <p className='ll-empty'>{emptyMessage}</p>;
     }
 
+    const colSpan = showPaid ? 8 : 7;
     const groups = groupByFlatName(list);
     return (
       <div className='ll-table-scroll'>
@@ -179,6 +180,7 @@ export default function Home() {
               <th className='col-date'>Date</th>
               <th className='col-qty'>Qty</th>
               <th className='col-total'>Total</th>
+              {showPaid && <th className='col-paid'>Paid</th>}
               <th className='col-action'>Action</th>
             </tr>
           </thead>
@@ -186,7 +188,12 @@ export default function Home() {
             {groups.map(group => (
               <Fragment key={group.flatName}>
                 <tr className='ll-flat-row'>
-                  <td colSpan='7'>{group.flatName}</td>
+                  <td colSpan={colSpan}>
+                    {group.flatName}
+                    <span className='ll-flat-count'>
+                      {group.items.length} {group.items.length === 1 ? 'order' : 'orders'}
+                    </span>
+                  </td>
                 </tr>
                 {group.items.map(order => (
                   <tr key={order.fileName}>
@@ -200,6 +207,13 @@ export default function Home() {
                     <td className='col-date'>{order.date || '—'}</td>
                     <td className='col-qty'>{orderTotalQty(order)}</td>
                     <td className='col-total'>₹ {Number(order.total || 0).toFixed(2)}</td>
+                    {showPaid && (
+                      <td className='col-paid'>
+                        <span className={order.paid ? 'll-paid-yes' : 'll-paid-no'}>
+                          {order.paid ? 'Paid' : 'Not Paid Yet'}
+                        </span>
+                      </td>
+                    )}
                     <td className='col-action'>
                       <div className='ll-actions'>
                         <button type='button' className='ll-btn secondary' onClick={() => deleteOrder(order.fileName)}>Delete</button>
@@ -215,7 +229,7 @@ export default function Home() {
     );
   }
 
-  function renderBillsTable(list, emptyMessage) {
+  function renderBillsTable(list, emptyMessage, { showPaid = false } = {}) {
     if (loading) {
       return <p className='ll-empty'>Loading bills…</p>;
     }
@@ -223,6 +237,7 @@ export default function Home() {
       return <p className='ll-empty'>{emptyMessage}</p>;
     }
 
+    const colSpan = showPaid ? 8 : 7;
     const groups = groupByFlatName(list);
     return (
       <div className='ll-table-scroll'>
@@ -235,6 +250,7 @@ export default function Home() {
               <th className='col-date'>Date</th>
               <th className='col-qty'>Qty</th>
               <th className='col-total'>Total</th>
+              {showPaid && <th className='col-paid'>Paid</th>}
               <th className='col-action'>Action</th>
             </tr>
           </thead>
@@ -242,7 +258,12 @@ export default function Home() {
             {groups.map(group => (
               <Fragment key={group.flatName}>
                 <tr className='ll-flat-row'>
-                  <td colSpan='7'>{group.flatName}</td>
+                  <td colSpan={colSpan}>
+                    {group.flatName}
+                    <span className='ll-flat-count'>
+                      {group.items.length} {group.items.length === 1 ? 'bill' : 'bills'}
+                    </span>
+                  </td>
                 </tr>
                 {group.items.map(bill => (
                   <tr key={bill.fileName}>
@@ -256,6 +277,13 @@ export default function Home() {
                     <td className='col-date'>{bill.date || '—'}</td>
                     <td className='col-qty'>{billTotalQty(bill)}</td>
                     <td className='col-total'>₹ {Number(bill.total || 0).toFixed(2)}</td>
+                    {showPaid && (
+                      <td className='col-paid'>
+                        <span className={bill.paid ? 'll-paid-yes' : 'll-paid-no'}>
+                          {bill.paid ? 'Paid' : 'Not Paid Yet'}
+                        </span>
+                      </td>
+                    )}
                     <td className='col-action'>
                       <div className='ll-actions'>
                         <button type='button' className='ll-btn secondary' onClick={() => deleteBill(bill.fileName)}>Delete</button>
@@ -307,7 +335,7 @@ export default function Home() {
           <div className='ll-grid'>
             <section className='ll-panel'>
               <h2>Not Delivered</h2>
-              {renderOrdersTable(notDeliveredOrders, 'No undelivered orders.')}
+              {renderOrdersTable(notDeliveredOrders, 'No undelivered orders.', { showPaid: true })}
             </section>
             <section className='ll-panel'>
               <h2>Delivered · Not Paid</h2>
@@ -322,7 +350,7 @@ export default function Home() {
           <div className='ll-grid'>
             <section className='ll-panel'>
               <h2>Not Delivered</h2>
-              {renderBillsTable(notDeliveredBills, 'No undelivered bills.')}
+              {renderBillsTable(notDeliveredBills, 'No undelivered bills.', { showPaid: true })}
             </section>
             <section className='ll-panel'>
               <h2>Delivered · Not Paid</h2>
