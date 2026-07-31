@@ -141,6 +141,11 @@ a.ll-btn.secondary {
   color: #2e7d32;
 }
 
+.ll-section-count {
+  font-weight: 600;
+  color: #4a6b50;
+}
+
 .ll-panel-header {
   display: flex;
   justify-content: space-between;

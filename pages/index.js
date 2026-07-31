@@ -489,30 +489,30 @@ export default function Home() {
         {tab === 'orders' ? (
           <div className='ll-grid'>
             <section className='ll-panel'>
-              <h2>Not Delivered</h2>
+              <h2>Not Delivered <span className='ll-section-count'>({notDeliveredOrders.length})</span></h2>
               {renderOrdersTable(notDeliveredOrders, 'No undelivered orders.', { showPaid: true, sectionId: 'orders-not-delivered' })}
             </section>
             <section className='ll-panel'>
-              <h2>Delivered · Not Paid</h2>
+              <h2>Delivered · Not Paid <span className='ll-section-count'>({deliveredUnpaidOrders.length})</span></h2>
               {renderOrdersTable(deliveredUnpaidOrders, 'No delivered unpaid orders.', { sectionId: 'orders-delivered-unpaid' })}
             </section>
             <section className='ll-panel'>
-              <h2>Delivered · Paid</h2>
+              <h2>Delivered · Paid <span className='ll-section-count'>({deliveredPaidOrders.length})</span></h2>
               {renderOrdersTable(deliveredPaidOrders, 'No delivered paid orders.', { sectionId: 'orders-delivered-paid' })}
             </section>
           </div>
         ) : (
           <div className='ll-grid'>
             <section className='ll-panel'>
-              <h2>Not Delivered</h2>
+              <h2>Not Delivered <span className='ll-section-count'>({notDeliveredBills.length})</span></h2>
               {renderBillsTable(notDeliveredBills, 'No undelivered bills.', { showPaid: true, sectionId: 'bills-not-delivered' })}
             </section>
             <section className='ll-panel'>
-              <h2>Delivered · Not Paid</h2>
+              <h2>Delivered · Not Paid <span className='ll-section-count'>({deliveredUnpaidBills.length})</span></h2>
               {renderBillsTable(deliveredUnpaidBills, 'No delivered unpaid bills.', { sectionId: 'bills-delivered-unpaid' })}
             </section>
             <section className='ll-panel'>
-              <h2>Delivered · Paid</h2>
+              <h2>Delivered · Paid <span className='ll-section-count'>({deliveredPaidBills.length})</span></h2>
               {renderBillsTable(deliveredPaidBills, 'No delivered paid bills.', { sectionId: 'bills-delivered-paid' })}
             </section>
           </div>
