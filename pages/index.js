@@ -20,13 +20,11 @@ function DeleteIconButton({ onClick, label }) {
 
 function PaidBadge({ paid }) {
   if (paid) {
-    return (
-      <span className='ll-paid-badge is-paid'>Paid</span>
-    );
+    return <span className='ll-paid-badge is-paid'>Paid</span>;
   }
   return (
     <span className='ll-paid-badge is-unpaid ll-paid-icon-only' title='Pending' aria-label='Pending'>
-      <svg className='ll-paid-icon' viewBox='0 0 24 24' width='16' height='16' aria-hidden='true' focusable='false'>
+      <svg className='ll-paid-icon' viewBox='0 0 24 24' width='18' height='18' aria-hidden='true' focusable='false'>
         <path fill='currentColor' d='M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8zm.75-12.5h-1.5v5.25l4.5 2.7.75-1.23-3.75-2.22z' />
       </svg>
     </span>
@@ -545,14 +543,8 @@ export default function Home() {
           </div>
         </header>
 
-        <div className='ll-tabs'>
-          <button type='button' className={tab === 'orders' ? 'll-tab active' : 'll-tab'} onClick={() => selectTab('orders')}>Orders</button>
-          <button type='button' className={tab === 'bills' ? 'll-tab active' : 'll-tab'} onClick={() => selectTab('bills')}>Bills</button>
-          <button type='button' className={tab === 'past' ? 'll-tab active' : 'll-tab'} onClick={() => selectTab('past')}>Past Orders</button>
-        </div>
-
-        <div className='ll-search'>
-          <svg className='ll-search-icon' viewBox='0 0 24 24' width='18' height='18' aria-hidden='true' focusable='false'>
+        <div className='ll-search' role='search'>
+          <svg className='ll-search-icon' viewBox='0 0 24 24' width='20' height='20' aria-hidden='true' focusable='false'>
             <path fill='currentColor' d='M15.5 14h-.79l-.28-.27A6.47 6.47 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z' />
           </svg>
           <input
@@ -561,15 +553,21 @@ export default function Home() {
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
             placeholder={tab === 'bills'
-              ? 'Search by flat name, flat #, customer, or bill #'
-              : 'Search by flat name, flat #, customer, or order #'}
+              ? 'Search flat name, flat #, customer, bill #'
+              : 'Search flat name, flat #, customer, order #'}
             aria-label='Search list'
           />
-          {searchQuery && (
+          {searchQuery ? (
             <button type='button' className='ll-search-clear' onClick={() => setSearchQuery('')} aria-label='Clear search'>
               Clear
             </button>
-          )}
+          ) : null}
+        </div>
+
+        <div className='ll-tabs'>
+          <button type='button' className={tab === 'orders' ? 'll-tab active' : 'll-tab'} onClick={() => selectTab('orders')}>Orders</button>
+          <button type='button' className={tab === 'bills' ? 'll-tab active' : 'll-tab'} onClick={() => selectTab('bills')}>Bills</button>
+          <button type='button' className={tab === 'past' ? 'll-tab active' : 'll-tab'} onClick={() => selectTab('past')}>Past Orders</button>
         </div>
 
         {tab === 'orders' ? (
