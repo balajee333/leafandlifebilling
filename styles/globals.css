@@ -550,13 +550,23 @@ a.ll-btn.secondary {
 .ll-mobile-card-bottom {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   gap: 10px;
+  min-height: 32px;
+  padding-right: 44px;
 }
 
 .ll-mobile-card-bottom strong {
   font-size: 16px;
   color: #1b5e20;
+}
+
+.ll-mobile-card-link .ll-paid-badge {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  margin: 0;
+  z-index: 1;
 }
 
 .ll-data-row {
