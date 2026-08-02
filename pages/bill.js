@@ -267,7 +267,8 @@ export default function BillPage() {
   }
 
   function printBill() {
-    const pdfTitle = `LeafAndLifeBill-${billNumber || '000'}`;
+    const billNum = String(billNumber || '000').replace(/^leafandlife-/i, '') || '000';
+    const pdfTitle = `leafandlife_bill_${billNum}`;
     const originalTitle = document.title;
     document.title = pdfTitle;
     window.onafterprint = () => {

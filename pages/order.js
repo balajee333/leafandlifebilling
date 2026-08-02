@@ -247,7 +247,8 @@ export default function OrderPage() {
       alert('Save the order first to create a linked bill before printing.');
       return;
     }
-    const pdfTitle = `LeafAndLifeBill-${billNumber || orderNumber || '000'}`;
+    const billNum = String(billNumber || orderNumber || '000').replace(/^leafandlife-/i, '') || '000';
+    const pdfTitle = `leafandlife_bill_${billNum}`;
     const originalTitle = document.title;
     document.title = pdfTitle;
     window.onafterprint = () => {
