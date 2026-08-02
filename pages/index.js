@@ -578,7 +578,7 @@ export default function Home() {
             </section>
             <section className='ll-panel'>
               <h2>Delivered · Not Paid <span className='ll-section-count'>({deliveredUnpaidOrders.length})</span></h2>
-              {renderOrdersTable(deliveredUnpaidOrders, 'No delivered unpaid orders.', { sectionId: 'orders-delivered-unpaid' })}
+              {renderOrdersTable(deliveredUnpaidOrders, 'No delivered unpaid orders.', { showPaid: true, sectionId: 'orders-delivered-unpaid' })}
             </section>
           </div>
         ) : tab === 'bills' ? (
@@ -589,7 +589,7 @@ export default function Home() {
             </section>
             <section className='ll-panel'>
               <h2>Delivered · Not Paid <span className='ll-section-count'>({deliveredUnpaidBills.length})</span></h2>
-              {renderBillsTable(deliveredUnpaidBills, 'No delivered unpaid bills.', { sectionId: 'bills-delivered-unpaid' })}
+              {renderBillsTable(deliveredUnpaidBills, 'No delivered unpaid bills.', { showPaid: true, sectionId: 'bills-delivered-unpaid' })}
             </section>
             <section className='ll-panel'>
               <h2>Delivered · Paid <span className='ll-section-count'>({deliveredPaidBills.length})</span></h2>
