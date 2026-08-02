@@ -576,6 +576,7 @@ export default function BillPage() {
           .editor-layout,.actions button,.actions a,.add-row-btn,.save-draft-btn{display:none!important}
           .print-layout{display:block!important}
           .invoice-card{box-shadow:none;border:0;padding:0}
+          .invoice-meta{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:14px!important}
           .panel,.header{display:none!important}
           .footer-row{display:flex!important;flex-direction:row!important;justify-content:space-between!important;align-items:flex-start!important;width:100%!important}
           .contact-block{flex:1 1 auto}

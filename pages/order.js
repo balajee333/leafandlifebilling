@@ -652,7 +652,7 @@ export default function OrderPage() {
         .scan-block{display:flex;flex-direction:column;align-items:center;text-align:center;margin-left:auto;flex:0 0 auto;width:180px}
         .scan-label{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:#2e7d32;font-weight:700;margin-bottom:8px;width:100%;text-align:center}
         .scan-block img{display:block;width:180px;max-width:180px;height:auto;border:1px solid #e6eee7;border-radius:18px;padding:8px;background:#fff;box-sizing:border-box}
-        @media (max-width:900px){
+        @media screen and (max-width:900px){
           .grid{grid-template-columns:1fr}
           .invoice-meta{grid-template-columns:1fr}
           .footer-row{flex-direction:column}
@@ -662,7 +662,7 @@ export default function OrderPage() {
           .panel{padding:18px;margin-top:14px;border-radius:14px}
           .status-pill{justify-content:flex-start;text-align:left;width:fit-content;max-width:100%;white-space:normal}
         }
-        @media (max-width:700px){
+        @media screen and (max-width:700px){
           .header{align-items:stretch;flex-direction:column;gap:12px}
           .header-main{width:100%}
           .header h1{font-size:22px}
@@ -688,6 +688,7 @@ export default function OrderPage() {
           .editor-layout,.header,.actions,.add-row-btn,.save-draft-btn{display:none!important}
           .print-layout{display:block!important}
           .invoice-card{box-shadow:none;border:0;padding:0}
+          .invoice-meta{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:14px!important}
           .footer-row{display:flex!important;flex-direction:row!important;justify-content:space-between!important;align-items:flex-start!important;width:100%!important}
           .contact-block{flex:1 1 auto}
           .scan-block{display:flex!important;flex-direction:column!important;align-items:center!important;margin-left:auto!important;margin-right:0!important;width:180px!important;flex:0 0 180px!important}
