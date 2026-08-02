@@ -2,22 +2,6 @@ import Head from 'next/head';
 import { Fragment, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/router';
 
-function DeleteIconButton({ onClick, label }) {
-  return (
-    <button
-      type='button'
-      className='ll-btn secondary ll-icon-btn'
-      onClick={onClick}
-      aria-label={label}
-      title='Delete'
-    >
-      <svg viewBox='0 0 24 24' width='16' height='16' aria-hidden='true' focusable='false'>
-        <path fill='currentColor' d='M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z' />
-      </svg>
-    </button>
-  );
-}
-
 function PaidBadge({ paid }) {
   if (paid) {
     return <span className='ll-paid-badge is-paid'>Paid</span>;
@@ -31,7 +15,7 @@ function PaidBadge({ paid }) {
   );
 }
 
-function MobileListCard({ href, numberLabel, name, meta, total, paidBadge, onDelete, deleteLabel }) {
+function MobileListCard({ href, numberLabel, name, meta, total, paidBadge }) {
   return (
     <article className='ll-mobile-card'>
       <a className='ll-mobile-card-link' href={href}>
@@ -49,9 +33,6 @@ function MobileListCard({ href, numberLabel, name, meta, total, paidBadge, onDel
           {paidBadge}
         </div>
       </a>
-      <div className='ll-mobile-card-action'>
-        <DeleteIconButton label={deleteLabel} onClick={onDelete} />
-      </div>
     </article>
   );
 }
@@ -141,44 +122,6 @@ export default function Home() {
       alert(error.message || 'Unable to load data.');
     } finally {
       setLoading(false);
-    }
-  }
-
-  async function deleteBill(fileName) {
-    if (!confirm('Warning: Delete this bill permanently?\n\nThis cannot be undone.')) return;
-    try {
-      const res = await fetch('/api/delete-bill', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fileName })
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        alert('Could not delete bill: ' + (err.error || 'Unknown error'));
-        return;
-      }
-      loadAll();
-    } catch (error) {
-      alert('Could not delete bill.');
-    }
-  }
-
-  async function deleteOrder(fileName) {
-    if (!confirm('Warning: Delete this order permanently?\n\nThe linked draft bill will also be deleted. This cannot be undone.')) return;
-    try {
-      const res = await fetch('/api/delete-order', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fileName })
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        alert('Could not delete order: ' + (err.error || 'Unknown error'));
-        return;
-      }
-      loadAll();
-    } catch (error) {
-      alert('Could not delete order.');
     }
   }
 
@@ -288,7 +231,7 @@ export default function Home() {
       return <p className='ll-empty'>{emptyMessage}</p>;
     }
 
-    const colSpan = showPaid ? 8 : 7;
+    const colSpan = showPaid ? 7 : 6;
     const groups = groupByFlatName(list, { sortBy });
     return (
       <>
@@ -303,7 +246,6 @@ export default function Home() {
                 <th className='col-qty'>Qty</th>
                 <th className='col-total'>Total</th>
                 {showPaid && <th className='col-paid'>Paid</th>}
-                <th className='col-action'>Action</th>
               </tr>
             </thead>
             <tbody>
@@ -342,11 +284,6 @@ export default function Home() {
                             <PaidBadge paid={order.paid} />
                           </td>
                         )}
-                        <td className='col-action' onClick={e => e.stopPropagation()}>
-                          <div className='ll-actions'>
-                            <DeleteIconButton label='Delete order' onClick={() => deleteOrder(order.fileName)} />
-                          </div>
-                        </td>
                       </tr>
                     ))}
                   </Fragment>
@@ -384,8 +321,6 @@ export default function Home() {
                         ]}
                         total={`₹ ${Number(order.total || 0).toFixed(2)}`}
                         paidBadge={showPaid ? <PaidBadge paid={order.paid} /> : null}
-                        deleteLabel='Delete order'
-                        onDelete={() => deleteOrder(order.fileName)}
                       />
                     ))}
                   </div>
@@ -406,7 +341,7 @@ export default function Home() {
       return <p className='ll-empty'>{emptyMessage}</p>;
     }
 
-    const colSpan = showPaid ? 8 : 7;
+    const colSpan = showPaid ? 7 : 6;
     const groups = groupByFlatName(list);
     return (
       <>
@@ -421,7 +356,6 @@ export default function Home() {
                 <th className='col-qty'>Qty</th>
                 <th className='col-total'>Total</th>
                 {showPaid && <th className='col-paid'>Paid</th>}
-                <th className='col-action'>Action</th>
               </tr>
             </thead>
             <tbody>
@@ -460,11 +394,6 @@ export default function Home() {
                             <PaidBadge paid={bill.paid} />
                           </td>
                         )}
-                        <td className='col-action' onClick={e => e.stopPropagation()}>
-                          <div className='ll-actions'>
-                            <DeleteIconButton label='Delete bill' onClick={() => deleteBill(bill.fileName)} />
-                          </div>
-                        </td>
                       </tr>
                     ))}
                   </Fragment>
@@ -502,8 +431,6 @@ export default function Home() {
                         ]}
                         total={`₹ ${Number(bill.total || 0).toFixed(2)}`}
                         paidBadge={showPaid ? <PaidBadge paid={bill.paid} /> : null}
-                        deleteLabel='Delete bill'
-                        onDelete={() => deleteBill(bill.fileName)}
                       />
                     ))}
                   </div>

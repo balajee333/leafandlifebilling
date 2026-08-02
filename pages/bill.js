@@ -298,10 +298,13 @@ export default function BillPage() {
             </div>
             <div className='actions' role='toolbar' aria-label='Bill actions'>
               {!isDelivered && (
-                <IconBtn primary onClick={markDelivered} label='Mark as Delivered'>{icons.deliver}</IconBtn>
+                <IconBtn onClick={markDelivered} label='Mark as Delivered'>{icons.deliver}</IconBtn>
               )}
               {isDelivered && (
-                <IconBtn onClick={unmarkDelivered} label='Unmark Delivered'>{icons.undo}</IconBtn>
+                <>
+                  <IconBtn primary disabled label='Delivered'>{icons.deliver}</IconBtn>
+                  <IconBtn onClick={unmarkDelivered} label='Unmark Delivered'>{icons.undo}</IconBtn>
+                </>
               )}
               {!paid ? (
                 <IconBtn onClick={markPaid} label='Mark as Paid'>{icons.pay}</IconBtn>
@@ -493,6 +496,7 @@ export default function BillPage() {
         :global(.icon-btn.primary){background:#2e7d32;color:#fff;border-color:#2e7d32}
         :global(.icon-btn.danger){background:#fff;color:#c62828;border-color:#f2c7c7}
         :global(.icon-btn:disabled){opacity:.45;cursor:not-allowed}
+        :global(.icon-btn.primary:disabled){opacity:1;cursor:default}
         :global(.icon-btn svg){display:block}
         button.button,a.button{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:none;border-radius:10px;padding:10px 14px;background:#2e7d32;color:#fff;text-decoration:none;cursor:pointer;font-weight:700;min-height:40px;font-size:15px;line-height:1.3;font-family:inherit}
         .button.secondary{background:#f2f7f2;color:#2e7d32;border:1px solid #d7e6da}
