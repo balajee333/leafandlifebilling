@@ -1,6 +1,26 @@
 import Head from 'next/head';
 import { Fragment, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/router';
+import { openWhatsAppChat, toWhatsAppUrl } from '../lib/whatsapp';
+
+function WhatsAppIconButton({ phone }) {
+  const url = toWhatsAppUrl(phone);
+  const label = url ? 'Chat on WhatsApp' : 'No mobile number';
+  return (
+    <button
+      type='button'
+      className='ll-btn secondary ll-icon-btn ll-whatsapp-btn'
+      onClick={() => openWhatsAppChat(phone)}
+      disabled={!url}
+      aria-label={label}
+      title={label}
+    >
+      <svg viewBox='0 0 24 24' width='16' height='16' aria-hidden='true' focusable='false'>
+        <path fill='currentColor' d='M17.47 14.38c-.3-.15-1.77-.87-2.04-.97-.27-.1-.47-.15-.67.15-.2.3-.77.97-.95 1.17-.17.2-.35.22-.65.07-.3-.15-1.26-.46-2.4-1.48-.89-.79-1.48-1.77-1.66-2.07-.17-.3-.02-.46.13-.61.13-.13.3-.35.45-.52.15-.17.2-.3.3-.5.1-.2.05-.37-.02-.52-.08-.15-.67-1.62-.92-2.22-.24-.58-.49-.5-.67-.51h-.57c-.2 0-.52.07-.8.37-.27.3-1.05 1.02-1.05 2.5s1.08 2.9 1.23 3.1c.15.2 2.12 3.24 5.14 4.54.72.31 1.28.5 1.72.64.72.23 1.38.2 1.9.12.58-.09 1.77-.72 2.02-1.42.25-.7.25-1.3.17-1.42-.07-.12-.27-.2-.57-.35zM12.04 21.8h-.01a9.77 9.77 0 0 1-4.97-1.36l-.36-.21-3.7.97 1-3.61-.23-.37a9.77 9.77 0 0 1-1.5-5.2 9.8 9.8 0 0 1 9.8-9.8 9.73 9.73 0 0 1 6.93 2.87 9.73 9.73 0 0 1 2.87 6.93 9.8 9.8 0 0 1-9.83 9.78zm8.5-18.3A11.5 11.5 0 0 0 12.03 0C5.43 0 .08 5.34.08 11.93c0 2.1.55 4.15 1.6 5.96L0 24l6.27-1.64a11.9 11.9 0 0 0 5.76 1.47h.01c6.6 0 11.95-5.35 11.95-11.94A11.87 11.87 0 0 0 20.54 3.5z' />
+      </svg>
+    </button>
+  );
+}
 
 function PaidBadge({ paid }) {
   if (paid) {
@@ -15,7 +35,7 @@ function PaidBadge({ paid }) {
   );
 }
 
-function MobileListCard({ href, numberLabel, name, meta, total, paidBadge }) {
+function MobileListCard({ href, numberLabel, name, meta, total, paidBadge, phone }) {
   return (
     <article className='ll-mobile-card'>
       <a className='ll-mobile-card-link' href={href}>
@@ -33,6 +53,9 @@ function MobileListCard({ href, numberLabel, name, meta, total, paidBadge }) {
           {paidBadge}
         </div>
       </a>
+      <div className='ll-mobile-card-action'>
+        <WhatsAppIconButton phone={phone} />
+      </div>
     </article>
   );
 }
@@ -231,7 +254,7 @@ export default function Home() {
       return <p className='ll-empty'>{emptyMessage}</p>;
     }
 
-    const colSpan = showPaid ? 7 : 6;
+    const colSpan = showPaid ? 8 : 7;
     const groups = groupByFlatName(list, { sortBy });
     return (
       <>
@@ -246,6 +269,7 @@ export default function Home() {
                 <th className='col-qty'>Qty</th>
                 <th className='col-total'>Total</th>
                 {showPaid && <th className='col-paid'>Paid</th>}
+                <th className='col-action'>Action</th>
               </tr>
             </thead>
             <tbody>
@@ -284,6 +308,11 @@ export default function Home() {
                             <PaidBadge paid={order.paid} />
                           </td>
                         )}
+                        <td className='col-action' onClick={e => e.stopPropagation()}>
+                          <div className='ll-actions'>
+                            <WhatsAppIconButton phone={order.customerPhone} />
+                          </div>
+                        </td>
                       </tr>
                     ))}
                   </Fragment>
@@ -321,6 +350,7 @@ export default function Home() {
                         ]}
                         total={`₹ ${Number(order.total || 0).toFixed(2)}`}
                         paidBadge={showPaid ? <PaidBadge paid={order.paid} /> : null}
+                        phone={order.customerPhone}
                       />
                     ))}
                   </div>
