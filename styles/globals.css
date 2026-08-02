@@ -447,9 +447,22 @@ a.ll-btn.secondary {
   color: #075e54;
 }
 
-.ll-actions .ll-whatsapp-btn:disabled {
+.ll-actions .ll-call-btn {
+  color: #1565c0;
+  border-color: #bbdefb;
+}
+
+.ll-actions .ll-call-btn:hover:not(:disabled) {
+  background: #e3f2fd;
+  border-color: #90caf9;
+  color: #0d47a1;
+}
+
+.ll-actions .ll-whatsapp-btn:disabled,
+.ll-actions .ll-call-btn:disabled {
   opacity: 0.4;
   cursor: not-allowed;
+  pointer-events: none;
 }
 
 .ll-actions .ll-icon-btn svg {
@@ -544,7 +557,7 @@ a.ll-btn.secondary {
 .ll-mobile-card-link {
   display: block;
   padding: 12px;
-  padding-right: 52px;
+  padding-right: 92px;
   color: inherit;
   text-decoration: none !important;
 }
@@ -559,6 +572,9 @@ a.ll-btn.secondary {
   top: 8px;
   right: 8px;
   z-index: 1;
+  display: flex;
+  gap: 6px;
+  align-items: center;
 }
 
 .ll-mobile-card-top {
