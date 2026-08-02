@@ -183,6 +183,17 @@ export default function OrderPage() {
     await persistOrder('delivered', paid, 'Order marked as delivered. Linked bill updated.');
   }
 
+  async function unmarkDelivered() {
+    if (!isDelivered) return;
+    if (!confirm('Move this order back to draft?\n\nThe linked bill will also return to draft so you can edit again.')) return;
+    setLoading(true);
+    try {
+      await persistOrder('draft', paid, 'Order moved back to draft. Linked bill updated.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
   async function markPaid() {
     if (paid) return;
     if (!validateRequired()) return;
@@ -232,6 +243,7 @@ export default function OrderPage() {
             )}
             <button className='button secondary delete-action' onClick={deleteCurrentOrder}>Delete Order</button>
             {!isDelivered && <button className='button' onClick={markDelivered} disabled={loading}>Mark as Delivered</button>}
+            {isDelivered && <button className='button secondary' onClick={unmarkDelivered} disabled={loading}>Unmark Delivered</button>}
             {!paid ? (
               <button className='button secondary' onClick={markPaid} disabled={loading}>Mark as Paid</button>
             ) : (

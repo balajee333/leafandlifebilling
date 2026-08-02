@@ -130,7 +130,7 @@ export default function BillPage() {
     };
   }
 
-  async function persistBill(targetStatus, paidState = paid) {
+  async function persistBill(targetStatus, paidState = paid, message) {
     const payload = collectBillData(targetStatus, paidState);
     const res = await fetch('/api/update-bill', {
       method: 'POST',
@@ -148,12 +148,12 @@ export default function BillPage() {
     setPaid(result.paid ?? paidState);
     await loadFlatNames();
     if (targetStatus === 'draft') {
-      alert('Draft saved successfully.');
+      alert(message || 'Draft saved successfully.');
       router.push('/?tab=bills');
       return true;
     }
     router.replace({ pathname: '/bill', query: { fileName: result.fileName } }, undefined, { shallow: true });
-    alert(targetStatus === 'delivered' ? 'Bill marked as delivered.' : 'Draft saved successfully.');
+    alert(message || (targetStatus === 'delivered' ? 'Bill marked as delivered.' : 'Draft saved successfully.'));
     return true;
   }
 
@@ -171,6 +171,12 @@ export default function BillPage() {
       return;
     }
     await persistBill('delivered');
+  }
+
+  async function unmarkDelivered() {
+    if (!isDelivered) return;
+    if (!confirm('Move this bill back to draft?\n\nAny linked order will also return to draft so you can edit again.')) return;
+    await persistBill('draft', paid, 'Bill moved back to draft. Linked order updated.');
   }
 
   async function markPaid() {
@@ -223,13 +229,14 @@ export default function BillPage() {
               </a>
               <div>
                 <h1>Bill Editor</h1>
-                <p>Create, save, and deliver bills. Drafts remain editable; delivered bills are locked.</p>
+                <p>Create, save, and deliver bills. Use Unmark Delivered to return a bill to draft if needed.</p>
               </div>
             </div>
             <div className='actions'>
               <a className='button secondary' href='/?tab=bills'>Back to Bills</a>
               <button className='button secondary delete-action' onClick={deleteCurrentBill}>Delete Bill</button>
               {!isDelivered && <button className='button' onClick={markDelivered}>Mark as Delivered</button>}
+              {isDelivered && <button className='button secondary' onClick={unmarkDelivered}>Unmark Delivered</button>}
               {!paid ? (
                 <button className='button secondary' onClick={markPaid}>Mark as Paid</button>
               ) : (
