@@ -5,6 +5,74 @@ import { useRouter } from 'next/router';
 const today = new Date().toISOString().slice(0, 10);
 const emptyItem = { product: '', qty: 1, price: '' };
 
+function IconBtn({ href, onClick, label, disabled, danger, primary, children }) {
+  const className = [
+    'icon-btn',
+    primary ? 'primary' : 'secondary',
+    danger ? 'danger' : ''
+  ].filter(Boolean).join(' ');
+  if (href) {
+    return (
+      <a className={className} href={href} title={label} aria-label={label}>
+        {children}
+      </a>
+    );
+  }
+  return (
+    <button type='button' className={className} onClick={onClick} disabled={disabled} title={label} aria-label={label}>
+      {children}
+    </button>
+  );
+}
+
+const icons = {
+  back: (
+    <svg viewBox='0 0 24 24' width='20' height='20' aria-hidden='true' focusable='false'>
+      <path fill='currentColor' d='M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z' />
+    </svg>
+  ),
+  plus: (
+    <svg viewBox='0 0 24 24' width='20' height='20' aria-hidden='true' focusable='false'>
+      <path fill='currentColor' d='M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z' />
+    </svg>
+  ),
+  trash: (
+    <svg viewBox='0 0 24 24' width='20' height='20' aria-hidden='true' focusable='false'>
+      <path fill='currentColor' d='M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z' />
+    </svg>
+  ),
+  deliver: (
+    <svg viewBox='0 0 24 24' width='20' height='20' aria-hidden='true' focusable='false'>
+      <path fill='currentColor' d='M20 8h-3V4H3v13h2a3 3 0 0 0 6 0h4a3 3 0 0 0 6 0h2v-5l-3-4zM8 18.5A1.5 1.5 0 1 1 9.5 17 1.5 1.5 0 0 1 8 18.5zm10 0a1.5 1.5 0 1 1 1.5-1.5 1.5 1.5 0 0 1-1.5 1.5zM17 12V9.5h2.5l1.5 2.5H17z' />
+    </svg>
+  ),
+  undo: (
+    <svg viewBox='0 0 24 24' width='20' height='20' aria-hidden='true' focusable='false'>
+      <path fill='currentColor' d='M12.5 8c-2.65 0-5.05.99-6.9 2.6L2 7v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8z' />
+    </svg>
+  ),
+  pay: (
+    <svg viewBox='0 0 24 24' width='20' height='20' aria-hidden='true' focusable='false'>
+      <path fill='currentColor' d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1.41 16.09V20h-2.67v-1.93c-1.71-.36-3.16-1.46-3.27-3.4h1.96c.1.93.87 1.62 2.31 1.62 1.3 0 2.16-.67 2.16-1.61 0-.94-.7-1.4-2.34-1.85-2.23-.6-3.72-1.54-3.72-3.5 0-1.74 1.36-2.95 3.1-3.3V5h2.67v1.95c1.86.45 2.79 1.86 2.85 3.39H14.3c-.05-1.11-.84-1.71-2.14-1.71-1.14 0-1.95.6-1.95 1.47 0 .86.7 1.3 2.45 1.8 2.38.67 3.63 1.62 3.63 3.56 0 1.84-1.38 3.08-3.13 3.43z' />
+    </svg>
+  ),
+  paid: (
+    <svg viewBox='0 0 24 24' width='20' height='20' aria-hidden='true' focusable='false'>
+      <path fill='currentColor' d='M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z' />
+    </svg>
+  ),
+  print: (
+    <svg viewBox='0 0 24 24' width='20' height='20' aria-hidden='true' focusable='false'>
+      <path fill='currentColor' d='M19 8H5a3 3 0 0 0-3 3v6h4v4h12v-4h4v-6a3 3 0 0 0-3-3zM16 19H8v-5h8v5zm3-7.5a1 1 0 1 1 1-1 1 1 0 0 1-1 1zM17 3H7v4h10V3z' />
+    </svg>
+  ),
+  save: (
+    <svg viewBox='0 0 24 24' width='20' height='20' aria-hidden='true' focusable='false'>
+      <path fill='currentColor' d='M17 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V7l-4-4zm-5 16a3 3 0 1 1 3-3 3 3 0 0 1-3 3zm3-10H5V5h10v4z' />
+    </svg>
+  )
+};
+
 export default function BillPage() {
   const router = useRouter();
   const { fileName } = router.query;
@@ -219,25 +287,29 @@ export default function BillPage() {
         <div className='editor-layout'>
           <div className='header'>
             <div className='header-main'>
+              <IconBtn href='/?tab=bills' label='Back to Bills'>{icons.back}</IconBtn>
               <a className='brand-link' href='/' aria-label='Go to home'>
                 <img className='header-logo' src='/logo.png' alt='Leaf & Life logo' />
               </a>
-              <div>
+              <div className='header-title'>
                 <h1>Bill Editor</h1>
                 <p>Create, save, and deliver bills. Use Unmark Delivered to return a bill to draft if needed.</p>
               </div>
             </div>
-            <div className='actions'>
-              <a className='button secondary' href='/?tab=bills'>Back to Bills</a>
-              <button className='button secondary delete-action' onClick={deleteCurrentBill}>Delete Bill</button>
-              {!isDelivered && <button className='button' onClick={markDelivered}>Mark as Delivered</button>}
-              {isDelivered && <button className='button secondary' onClick={unmarkDelivered}>Unmark Delivered</button>}
-              {!paid ? (
-                <button className='button secondary' onClick={markPaid}>Mark as Paid</button>
-              ) : (
-                <button className='button secondary' disabled>Paid</button>
+            <div className='actions' role='toolbar' aria-label='Bill actions'>
+              {!isDelivered && (
+                <IconBtn primary onClick={markDelivered} label='Mark as Delivered'>{icons.deliver}</IconBtn>
               )}
-              <button className='button secondary' onClick={printBill}>Print / Save PDF</button>
+              {isDelivered && (
+                <IconBtn onClick={unmarkDelivered} label='Unmark Delivered'>{icons.undo}</IconBtn>
+              )}
+              {!paid ? (
+                <IconBtn onClick={markPaid} label='Mark as Paid'>{icons.pay}</IconBtn>
+              ) : (
+                <IconBtn disabled label='Paid'>{icons.paid}</IconBtn>
+              )}
+              <IconBtn onClick={printBill} label='Print / Save PDF'>{icons.print}</IconBtn>
+              <IconBtn danger onClick={deleteCurrentBill} label='Delete Bill'>{icons.trash}</IconBtn>
             </div>
           </div>
 
@@ -315,15 +387,25 @@ export default function BillPage() {
                           <span className='item-line-label'>Total</span>
                           ₹ {(Number(item.qty || 0) * Number(item.price || 0)).toFixed(2)}
                         </td>
-                        <td><button className='delete-btn' type='button' disabled={isDelivered} onClick={() => removeItem(index)}>Delete</button></td>
+                        <td>
+                          <IconBtn danger disabled={isDelivered} onClick={() => removeItem(index)} label='Remove item'>
+                            {icons.trash}
+                          </IconBtn>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
-              <button className='button secondary add-row-btn' onClick={addItem} disabled={isDelivered}>+ Add Item</button>
+              <button className='button secondary add-row-btn' onClick={addItem} disabled={isDelivered}>
+                <span className='btn-icon'>{icons.plus}</span>
+                Add Item
+              </button>
               {!isDelivered && (
-                <button className='button save-draft-btn' onClick={saveDraft}>Save Draft</button>
+                <button className='button save-draft-btn' onClick={saveDraft}>
+                  <span className='btn-icon'>{icons.save}</span>
+                  Save Draft
+                </button>
               )}
             </div>
 
@@ -343,7 +425,6 @@ export default function BillPage() {
                   <p>Bill / Delivery receipt</p>
                 </div>
               </div>
-              <div className='status-pill'>{`${status === 'delivered' ? 'Delivered' : 'Draft'} · ${paid ? 'Paid' : 'Pending'}`}</div>
             </div>
 
             <div className='invoice-meta'>
@@ -401,15 +482,22 @@ export default function BillPage() {
         .page{max-width:1000px;margin:24px auto;padding:24px;width:100%;box-sizing:border-box;overflow-x:hidden}
         .editor-layout{display:grid;gap:20px;max-width:100%}
         .header{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap}
-        .header-main{display:flex;align-items:center;gap:12px;min-width:0}
+        .header-main{display:flex;align-items:center;gap:10px;min-width:0;flex:1}
+        .header-title{min-width:0}
         .brand-link{display:inline-flex;flex-shrink:0;line-height:0}
         .header-logo{width:52px;height:52px;object-fit:contain;display:block}
         .header h1{margin:0;color:#2e7d32;font-size:28px}
         .header p{margin:6px 0 0;color:#4f6b53;max-width:580px}
-        .actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:flex-end}
-        button,a.button{display:inline-flex;align-items:center;justify-content:center;border:none;border-radius:10px;padding:10px 14px;background:#2e7d32;color:#fff;text-decoration:none;cursor:pointer;font-weight:700;min-height:40px;font-size:15px;line-height:1.3;font-family:inherit}
+        .actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:flex-end}
+        :global(.icon-btn){display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;min-width:44px;min-height:44px;padding:0;border-radius:12px;border:1px solid #d7e6da;background:#f2f7f2;color:#2e7d32;cursor:pointer;text-decoration:none;flex-shrink:0;font-family:inherit;box-sizing:border-box}
+        :global(.icon-btn.primary){background:#2e7d32;color:#fff;border-color:#2e7d32}
+        :global(.icon-btn.danger){background:#fff;color:#c62828;border-color:#f2c7c7}
+        :global(.icon-btn:disabled){opacity:.45;cursor:not-allowed}
+        :global(.icon-btn svg){display:block}
+        button.button,a.button{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:none;border-radius:10px;padding:10px 14px;background:#2e7d32;color:#fff;text-decoration:none;cursor:pointer;font-weight:700;min-height:40px;font-size:15px;line-height:1.3;font-family:inherit}
         .button.secondary{background:#f2f7f2;color:#2e7d32;border:1px solid #d7e6da}
-        .delete-action{background:#fff;color:#c62828;border:1px solid #f2c7c7}
+        .btn-icon{display:inline-flex;align-items:center;line-height:0}
+        .btn-icon :global(svg){display:block}
         .panel{background:#fff;border-radius:18px;padding:24px;box-shadow:0 18px 40px rgba(26,61,35,.08);margin-top:18px;max-width:100%;box-sizing:border-box;overflow:hidden}
         .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;align-items:start}
         .field{display:flex;flex-direction:column;gap:6px;margin-bottom:12px;min-width:0}
@@ -420,9 +508,8 @@ export default function BillPage() {
         .add-row-btn{margin-top:12px;align-self:flex-start}
         .save-draft-btn{margin-top:10px;align-self:stretch;width:100%}
         table{width:100%;border-collapse:collapse;min-width:0}
-        th,td{padding:12px 12px;border-bottom:1px solid #e8efe9;text-align:left}
+        th,td{padding:12px 12px;border-bottom:1px solid #e8efe9;text-align:left;vertical-align:middle}
         th{background:#f5faf5;color:#2e7d32;font-size:12px;text-transform:uppercase;letter-spacing:.06em}
-        .delete-btn{background:#fff;color:#c62828;border:1px solid #f2c7c7;padding:8px 10px;border-radius:10px}
         .total{display:flex;justify-content:flex-end;align-items:center;gap:10px;margin-top:18px;padding:14px 18px;border:1px solid #dce8de;border-radius:12px;background:#f7fbf7;width:fit-content;margin-left:auto;font-weight:700;color:#1b5e20;box-sizing:border-box}
         .status-pill{display:inline-flex;align-items:center;justify-content:center;padding:8px 14px;border-radius:999px;background:#eef7ed;color:#2e7d32;font-weight:700}
         .item-line-label{display:none}
@@ -459,13 +546,14 @@ export default function BillPage() {
           .status-pill{justify-content:flex-start;text-align:left;width:fit-content;max-width:100%;white-space:normal}
         }
         @media screen and (max-width:700px){
-          .header{align-items:flex-start;flex-direction:column}
+          .header{align-items:stretch;flex-direction:column;gap:12px}
+          .header-main{width:100%}
           .header h1{font-size:22px}
           .header p{display:none}
-          .header-logo{width:44px;height:44px}
-          .actions{width:100%;justify-content:flex-start;gap:8px}
-          .actions button,.actions a.button{width:100%;box-sizing:border-box;font-size:16px;padding:12px 16px;min-height:48px;line-height:1.35}
-          .add-row-btn,.save-draft-btn,.delete-btn{font-size:16px;padding:12px 16px;min-height:48px;width:100%;box-sizing:border-box}
+          .header-logo{width:40px;height:40px}
+          .actions{width:100%;display:grid;grid-template-columns:repeat(auto-fit,minmax(48px,1fr));gap:8px;justify-content:stretch}
+          :global(.actions .icon-btn){width:100%;height:48px;min-width:0}
+          .add-row-btn,.save-draft-btn{font-size:16px;padding:12px 16px;min-height:48px;width:100%;box-sizing:border-box}
           .table-shell{border:none;background:transparent;overflow:visible}
           .table-shell table,.table-shell tbody{display:block;width:100%}
           .table-shell thead{display:none}
@@ -473,7 +561,7 @@ export default function BillPage() {
           .table-shell td{display:block;border:none;padding:0;min-width:0}
           .table-shell td:nth-child(1){grid-column:1 / -1}
           .table-shell td:nth-child(4){display:flex;align-items:flex-end;font-weight:700;color:#1b5e20;padding-bottom:10px}
-          .table-shell td:nth-child(5){grid-column:1 / -1}
+          .table-shell td:nth-child(5){grid-column:1 / -1;display:flex;justify-content:flex-end}
           .item-line-label{display:block;font-size:11px;color:#6b7a6f;font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px}
           .field.item-section{padding-bottom:0}
           .total{width:100%;justify-content:space-between}
