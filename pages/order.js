@@ -1,6 +1,7 @@
 import Head from 'next/head';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/router';
+import { billPdfBaseName, printWithPdfTitle } from '../lib/print-pdf';
 import { openWhatsAppChat, toWhatsAppUrl } from '../lib/whatsapp';
 
 const today = new Date().toISOString().slice(0, 10);
@@ -115,6 +116,9 @@ export default function OrderPage() {
   const isDelivered = status === 'delivered';
   const canCreateAnother = Boolean(currentFileName);
   const whatsappUrl = toWhatsAppUrl(customerPhone);
+  const pdfPageTitle = billNumber && billNumber !== '---'
+    ? billPdfBaseName(billNumber, orderNumber || '000')
+    : 'Order';
 
   useEffect(() => {
     loadFlatNames();
@@ -247,15 +251,7 @@ export default function OrderPage() {
       alert('Save the order first to create a linked bill before printing.');
       return;
     }
-    const billNum = String(billNumber || orderNumber || '000').replace(/^leafandlife-/i, '') || '000';
-    const pdfTitle = `leafandlife_bill_${billNum}`;
-    const originalTitle = document.title;
-    document.title = pdfTitle;
-    window.onafterprint = () => {
-      document.title = originalTitle;
-      window.onafterprint = null;
-    };
-    window.print();
+    printWithPdfTitle(billPdfBaseName(billNumber, orderNumber || '000'));
   }
 
   function updateItem(index, field, value) {
@@ -386,7 +382,7 @@ export default function OrderPage() {
   return (
     <>
       <Head>
-        <title>Order</title>
+        <title>{pdfPageTitle}</title>
       </Head>
 
       <div className='page'>

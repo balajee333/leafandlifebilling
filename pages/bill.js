@@ -1,6 +1,7 @@
 import Head from 'next/head';
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/router';
+import { billPdfBaseName, printWithPdfTitle } from '../lib/print-pdf';
 
 const today = new Date().toISOString().slice(0, 10);
 const emptyItem = { product: '', qty: 1, price: '' };
@@ -267,21 +268,17 @@ export default function BillPage() {
   }
 
   function printBill() {
-    const billNum = String(billNumber || '000').replace(/^leafandlife-/i, '') || '000';
-    const pdfTitle = `leafandlife_bill_${billNum}`;
-    const originalTitle = document.title;
-    document.title = pdfTitle;
-    window.onafterprint = () => {
-      document.title = originalTitle;
-      window.onafterprint = null;
-    };
-    window.print();
+    printWithPdfTitle(billPdfBaseName(billNumber));
   }
+
+  const pdfPageTitle = billNumber && billNumber !== '---'
+    ? billPdfBaseName(billNumber)
+    : 'Bill Editor';
 
   return (
     <>
       <Head>
-        <title>Bill Editor</title>
+        <title>{pdfPageTitle}</title>
       </Head>
 
       <div className='page'>
