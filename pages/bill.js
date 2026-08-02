@@ -1,6 +1,7 @@
 import Head from 'next/head';
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/router';
+import ConfirmModal from '../components/ConfirmModal';
 import { billPdfBaseName, printWithPdfTitle } from '../lib/print-pdf';
 
 const today = new Date().toISOString().slice(0, 10);
@@ -90,6 +91,8 @@ export default function BillPage() {
   const [items, setItems] = useState([emptyItem]);
   const [loading, setLoading] = useState(false);
   const [flatNames, setFlatNames] = useState([]);
+  const [confirmDialog, setConfirmDialog] = useState(null);
+  const [confirmBusy, setConfirmBusy] = useState(false);
 
   const total = useMemo(() => items.reduce((sum, item) => sum + Number(item.qty || 0) * Number(item.price || 0), 0), [items]);
   const isDelivered = status === 'delivered';
@@ -229,12 +232,33 @@ export default function BillPage() {
     await persistBill('draft');
   }
 
-  async function markDelivered() {
+  function closeConfirm() {
+    if (confirmBusy) return;
+    setConfirmDialog(null);
+  }
+
+  async function runConfirmedAction() {
+    if (!confirmDialog?.run) return;
+    setConfirmBusy(true);
+    try {
+      await confirmDialog.run();
+      setConfirmDialog(null);
+    } finally {
+      setConfirmBusy(false);
+    }
+  }
+
+  function markDelivered() {
     if (!customerName.trim() || !customerPhone.trim()) {
       alert('Please enter both the customer name and phone number before marking the bill as delivered.');
       return;
     }
-    await persistBill('delivered');
+    setConfirmDialog({
+      title: 'Mark as Delivered',
+      message: 'Mark this bill as delivered?',
+      confirmLabel: 'Mark Delivered',
+      run: () => persistBill('delivered')
+    });
   }
 
   async function unmarkDelivered() {
@@ -243,28 +267,40 @@ export default function BillPage() {
     await persistBill('draft', paid, 'Bill moved back to draft. Linked order updated.');
   }
 
-  async function markPaid() {
+  function markPaid() {
     if (paid) return;
-    await persistBill(status, true);
+    setConfirmDialog({
+      title: 'Mark as Paid',
+      message: 'Mark this bill as paid?',
+      confirmLabel: 'Mark Paid',
+      run: () => persistBill(status, true)
+    });
   }
 
-  async function deleteCurrentBill() {
+  function deleteCurrentBill() {
     if (!currentFileName) {
       alert('No bill selected to delete.');
       return;
     }
-    if (!confirm('Warning: Delete this bill permanently?\n\nThis cannot be undone.')) return;
-    const res = await fetch('/api/delete-bill', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ fileName: currentFileName })
+    setConfirmDialog({
+      title: 'Delete Bill',
+      message: 'Delete this bill permanently?\n\nThis cannot be undone.',
+      confirmLabel: 'Delete Bill',
+      danger: true,
+      run: async () => {
+        const res = await fetch('/api/delete-bill', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ fileName: currentFileName })
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          alert('Could not delete bill: ' + (err.error || 'Unknown error'));
+          return;
+        }
+        router.push('/?tab=orders');
+      }
     });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      alert('Could not delete bill: ' + (err.error || 'Unknown error'));
-      return;
-    }
-    router.push('/?tab=orders');
   }
 
   function printBill() {
@@ -280,6 +316,17 @@ export default function BillPage() {
       <Head>
         <title>{pdfPageTitle}</title>
       </Head>
+
+      <ConfirmModal
+        open={Boolean(confirmDialog)}
+        title={confirmDialog?.title}
+        message={confirmDialog?.message}
+        confirmLabel={confirmDialog?.confirmLabel}
+        danger={confirmDialog?.danger}
+        busy={confirmBusy}
+        onCancel={closeConfirm}
+        onConfirm={runConfirmedAction}
+      />
 
       <div className='page'>
         <div className='editor-layout'>

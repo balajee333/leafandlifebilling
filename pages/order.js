@@ -1,6 +1,7 @@
 import Head from 'next/head';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/router';
+import ConfirmModal from '../components/ConfirmModal';
 import { billPdfBaseName, printWithPdfTitle } from '../lib/print-pdf';
 import { openWhatsAppChat, toWhatsAppUrl } from '../lib/whatsapp';
 
@@ -110,6 +111,8 @@ export default function OrderPage() {
   const [items, setItems] = useState([emptyItem]);
   const [loading, setLoading] = useState(false);
   const [flatNames, setFlatNames] = useState([]);
+  const [confirmDialog, setConfirmDialog] = useState(null);
+  const [confirmBusy, setConfirmBusy] = useState(false);
   const skipResetRef = useRef(false);
 
   const total = useMemo(() => items.reduce((sum, item) => sum + Number(item.qty || 0) * Number(item.price || 0), 0), [items]);
@@ -338,9 +341,30 @@ export default function OrderPage() {
     await persistOrder('draft', paid, 'Order draft saved. Linked draft bill created/updated.');
   }
 
-  async function markDelivered() {
+  function closeConfirm() {
+    if (confirmBusy) return;
+    setConfirmDialog(null);
+  }
+
+  async function runConfirmedAction() {
+    if (!confirmDialog?.run) return;
+    setConfirmBusy(true);
+    try {
+      await confirmDialog.run();
+      setConfirmDialog(null);
+    } finally {
+      setConfirmBusy(false);
+    }
+  }
+
+  function markDelivered() {
     if (!validateRequired()) return;
-    await persistOrder('delivered', paid, 'Order marked as delivered. Linked bill updated.');
+    setConfirmDialog({
+      title: 'Mark as Delivered',
+      message: 'Mark this order as delivered?\n\nThe linked bill will also be marked as delivered.',
+      confirmLabel: 'Mark Delivered',
+      run: () => persistOrder('delivered', paid, 'Order marked as delivered. Linked bill updated.')
+    });
   }
 
   async function unmarkDelivered() {
@@ -354,29 +378,41 @@ export default function OrderPage() {
     }
   }
 
-  async function markPaid() {
+  function markPaid() {
     if (paid) return;
     if (!validateRequired()) return;
-    await persistOrder(status, true, 'Order marked as paid. Linked bill updated.');
+    setConfirmDialog({
+      title: 'Mark as Paid',
+      message: 'Mark this order as paid?\n\nThe linked bill will also be marked as paid.',
+      confirmLabel: 'Mark Paid',
+      run: () => persistOrder(status, true, 'Order marked as paid. Linked bill updated.')
+    });
   }
 
-  async function deleteCurrentOrder() {
+  function deleteCurrentOrder() {
     if (!currentFileName) {
       alert('No order selected to delete.');
       return;
     }
-    if (!confirm('Warning: Delete this order permanently?\n\nThe linked draft bill will also be deleted. This cannot be undone.')) return;
-    const res = await fetch('/api/delete-order', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ fileName: currentFileName })
+    setConfirmDialog({
+      title: 'Delete Order',
+      message: 'Delete this order permanently?\n\nThe linked draft bill will also be deleted. This cannot be undone.',
+      confirmLabel: 'Delete Order',
+      danger: true,
+      run: async () => {
+        const res = await fetch('/api/delete-order', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ fileName: currentFileName })
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          alert('Could not delete order: ' + (err.error || 'Unknown error'));
+          return;
+        }
+        router.push('/?tab=orders');
+      }
     });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      alert('Could not delete order: ' + (err.error || 'Unknown error'));
-      return;
-    }
-    router.push('/?tab=orders');
   }
 
   return (
@@ -384,6 +420,17 @@ export default function OrderPage() {
       <Head>
         <title>{pdfPageTitle}</title>
       </Head>
+
+      <ConfirmModal
+        open={Boolean(confirmDialog)}
+        title={confirmDialog?.title}
+        message={confirmDialog?.message}
+        confirmLabel={confirmDialog?.confirmLabel}
+        danger={confirmDialog?.danger}
+        busy={confirmBusy}
+        onCancel={closeConfirm}
+        onConfirm={runConfirmedAction}
+      />
 
       <div className='page'>
         <div className='header'>
