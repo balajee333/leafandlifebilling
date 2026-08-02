@@ -147,11 +147,6 @@ export default function BillPage() {
     setStatus(result.status || targetStatus);
     setPaid(result.paid ?? paidState);
     await loadFlatNames();
-    if (targetStatus === 'draft') {
-      alert(message || 'Draft saved successfully.');
-      router.push('/?tab=bills');
-      return true;
-    }
     router.replace({ pathname: '/bill', query: { fileName: result.fileName } }, undefined, { shallow: true });
     alert(message || (targetStatus === 'delivered' ? 'Bill marked as delivered.' : 'Draft saved successfully.'));
     return true;

@@ -105,6 +105,49 @@ a.ll-btn.secondary {
   width: 100%;
 }
 
+.ll-search {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: -6px 0 18px;
+  padding: 10px 12px;
+  background: #fff;
+  border: 1px solid #d7e6da;
+  border-radius: 12px;
+}
+
+.ll-search-icon {
+  flex-shrink: 0;
+  color: #2e7d32;
+}
+
+.ll-search-input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 16px;
+  font-family: inherit;
+  color: #223126;
+}
+
+.ll-search-input::placeholder {
+  color: #8a9a8e;
+}
+
+.ll-search-clear {
+  border: none;
+  background: #f2f7f2;
+  color: #2e7d32;
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+  font-family: inherit;
+}
+
 .ll-tab {
   border: 1px solid #d7e6da;
   background: #f2f7f2;
@@ -318,6 +361,11 @@ a.ll-btn.secondary {
   background: #fff4e5;
   color: #8a5a00;
   border: 1px solid #f0d4a0;
+}
+
+.ll-paid-badge.ll-paid-icon-only {
+  padding: 6px;
+  justify-content: center;
 }
 
 .ll-panel > .ll-empty {

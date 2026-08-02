@@ -19,14 +19,16 @@ function DeleteIconButton({ onClick, label }) {
 }
 
 function PaidBadge({ paid }) {
+  if (paid) {
+    return (
+      <span className='ll-paid-badge is-paid'>Paid</span>
+    );
+  }
   return (
-    <span className={`ll-paid-badge ${paid ? 'is-paid' : 'is-unpaid'}`}>
-      {!paid && (
-        <svg className='ll-paid-icon' viewBox='0 0 24 24' width='14' height='14' aria-hidden='true' focusable='false'>
-          <path fill='currentColor' d='M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8zm.75-12.5h-1.5v5.25l4.5 2.7.75-1.23-3.75-2.22z' />
-        </svg>
-      )}
-      {paid ? 'Paid' : 'Pending'}
+    <span className='ll-paid-badge is-unpaid ll-paid-icon-only' title='Pending' aria-label='Pending'>
+      <svg className='ll-paid-icon' viewBox='0 0 24 24' width='16' height='16' aria-hidden='true' focusable='false'>
+        <path fill='currentColor' d='M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8zm.75-12.5h-1.5v5.25l4.5 2.7.75-1.23-3.75-2.22z' />
+      </svg>
     </span>
   );
 }
@@ -78,6 +80,7 @@ export default function Home() {
   const [delivered, setDelivered] = useState([]);
   const [loading, setLoading] = useState(true);
   const [collapsedFlats, setCollapsedFlats] = useState(() => new Set());
+  const [searchQuery, setSearchQuery] = useState('');
 
   function flatGroupKey(sectionId, flatName) {
     return `${sectionId}::${flatName}`;
@@ -186,26 +189,38 @@ export default function Home() {
     return order.items.reduce((sum, item) => sum + Number(item.qty || 0), 0);
   }
 
+  function matchesSearch(item, { numberKey }) {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return true;
+    const fields = [
+      item.flatName,
+      item.flatNumber,
+      item.customerName,
+      item[numberKey]
+    ];
+    return fields.some(value => String(value || '').toLowerCase().includes(q));
+  }
+
   const notDeliveredOrders = useMemo(
-    () => orders.filter(order => order.status !== 'delivered'),
-    [orders]
+    () => orders.filter(order => order.status !== 'delivered' && matchesSearch(order, { numberKey: 'orderNumber' })),
+    [orders, searchQuery]
   );
 
   const deliveredUnpaidOrders = useMemo(
-    () => orders.filter(order => order.status === 'delivered' && !order.paid),
-    [orders]
+    () => orders.filter(order => order.status === 'delivered' && !order.paid && matchesSearch(order, { numberKey: 'orderNumber' })),
+    [orders, searchQuery]
   );
 
   const deliveredPaidOrders = useMemo(
     () => orders
-      .filter(order => order.status === 'delivered' && order.paid)
+      .filter(order => order.status === 'delivered' && order.paid && matchesSearch(order, { numberKey: 'orderNumber' }))
       .slice()
       .sort((a, b) => {
         const aTime = new Date(a.deliveredAt || a.updatedAt || a.createdAt || 0).getTime();
         const bTime = new Date(b.deliveredAt || b.updatedAt || b.createdAt || 0).getTime();
         return bTime - aTime;
       }),
-    [orders]
+    [orders, searchQuery]
   );
 
   const allBills = useMemo(
@@ -216,18 +231,18 @@ export default function Home() {
   );
 
   const notDeliveredBills = useMemo(
-    () => allBills.filter(bill => bill.status !== 'delivered'),
-    [allBills]
+    () => allBills.filter(bill => bill.status !== 'delivered' && matchesSearch(bill, { numberKey: 'billNumber' })),
+    [allBills, searchQuery]
   );
 
   const deliveredUnpaidBills = useMemo(
-    () => allBills.filter(bill => bill.status === 'delivered' && !bill.paid),
-    [allBills]
+    () => allBills.filter(bill => bill.status === 'delivered' && !bill.paid && matchesSearch(bill, { numberKey: 'billNumber' })),
+    [allBills, searchQuery]
   );
 
   const deliveredPaidBills = useMemo(
-    () => allBills.filter(bill => bill.status === 'delivered' && bill.paid),
-    [allBills]
+    () => allBills.filter(bill => bill.status === 'delivered' && bill.paid && matchesSearch(bill, { numberKey: 'billNumber' })),
+    [allBills, searchQuery]
   );
 
   function billTotalQty(bill) {
@@ -534,6 +549,27 @@ export default function Home() {
           <button type='button' className={tab === 'orders' ? 'll-tab active' : 'll-tab'} onClick={() => selectTab('orders')}>Orders</button>
           <button type='button' className={tab === 'bills' ? 'll-tab active' : 'll-tab'} onClick={() => selectTab('bills')}>Bills</button>
           <button type='button' className={tab === 'past' ? 'll-tab active' : 'll-tab'} onClick={() => selectTab('past')}>Past Orders</button>
+        </div>
+
+        <div className='ll-search'>
+          <svg className='ll-search-icon' viewBox='0 0 24 24' width='18' height='18' aria-hidden='true' focusable='false'>
+            <path fill='currentColor' d='M15.5 14h-.79l-.28-.27A6.47 6.47 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z' />
+          </svg>
+          <input
+            type='search'
+            className='ll-search-input'
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            placeholder={tab === 'bills'
+              ? 'Search by flat name, flat #, customer, or bill #'
+              : 'Search by flat name, flat #, customer, or order #'}
+            aria-label='Search list'
+          />
+          {searchQuery && (
+            <button type='button' className='ll-search-clear' onClick={() => setSearchQuery('')} aria-label='Clear search'>
+              Clear
+            </button>
+          )}
         </div>
 
         {tab === 'orders' ? (

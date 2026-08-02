@@ -209,13 +209,8 @@ export default function OrderPage() {
     setStatus(result.status || targetStatus);
     setPaid(result.paid ?? paidState);
     await loadFlatNames();
-    if (targetStatus === 'draft') {
-      alert(message || 'Order draft saved. Linked draft bill created/updated.');
-      router.push('/?tab=orders');
-      return true;
-    }
     router.replace({ pathname: '/order', query: { fileName: result.fileName } }, undefined, { shallow: true });
-    alert(message || (targetStatus === 'delivered' ? 'Order marked as delivered.' : 'Order draft saved. Linked draft bill created/updated.'));
+    alert(message || (targetStatus === 'delivered' ? 'Order marked as delivered. Linked bill updated.' : 'Order draft saved. Linked draft bill created/updated.'));
     return true;
   }
 
