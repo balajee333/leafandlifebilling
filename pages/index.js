@@ -490,10 +490,6 @@ export default function Home() {
               <p>Orders sorted by most recent activity.</p>
             </div>
           </div>
-          <div className='ll-top-actions'>
-            <a className='ll-btn' href='/order'>Create New Order</a>
-            <button type='button' className='ll-btn' onClick={loadAll}>Refresh</button>
-          </div>
         </header>
 
         <div className='ll-search' role='search'>
@@ -539,6 +535,17 @@ export default function Home() {
             </section>
           </div>
         )}
+
+        <a
+          className='ll-fab'
+          href='/order'
+          aria-label='Create new order'
+          title='Create new order'
+        >
+          <svg viewBox='0 0 24 24' width='28' height='28' aria-hidden='true' focusable='false'>
+            <path fill='currentColor' d='M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z' />
+          </svg>
+        </a>
       </div>
     </>
   );

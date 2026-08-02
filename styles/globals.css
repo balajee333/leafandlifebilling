@@ -23,6 +23,7 @@ a {
   max-width: 1100px;
   margin: 24px auto;
   padding: 24px;
+  padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px));
 }
 
 .ll-header {
@@ -65,10 +66,44 @@ a {
   color: #4f6b53;
 }
 
-.ll-top-actions {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
+.ll-fab {
+  position: fixed;
+  right: max(20px, env(safe-area-inset-right, 0px));
+  bottom: max(20px, calc(16px + env(safe-area-inset-bottom, 0px)));
+  z-index: 900;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  background: #2e7d32;
+  color: #fff !important;
+  text-decoration: none !important;
+  box-shadow: 0 10px 24px rgba(27, 94, 32, 0.35);
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  user-select: none;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.ll-fab svg {
+  display: block;
+}
+
+.ll-fab:hover {
+  background: #256b29;
+  box-shadow: 0 12px 28px rgba(27, 94, 32, 0.4);
+}
+
+.ll-fab:active {
+  transform: scale(0.96);
+  box-shadow: 0 6px 16px rgba(27, 94, 32, 0.3);
+}
+
+.ll-fab:focus-visible {
+  outline: 3px solid #a5d6a7;
+  outline-offset: 3px;
 }
 
 .ll-btn,
@@ -593,7 +628,7 @@ a.ll-btn.secondary {
 @media (max-width: 800px) {
   .ll-page {
     margin: 0;
-    padding: 14px 12px 24px;
+    padding: 14px 12px calc(104px + env(safe-area-inset-bottom, 0px));
     max-width: none;
   }
 
@@ -614,13 +649,11 @@ a.ll-btn.secondary {
     font-size: 13px;
   }
 
-  .ll-top-actions {
-    width: 100%;
-  }
-
-  .ll-top-actions .ll-btn {
-    flex: 1;
-    min-width: 0;
+  .ll-fab {
+    width: 60px;
+    height: 60px;
+    right: max(16px, env(safe-area-inset-right, 0px));
+    bottom: max(16px, calc(12px + env(safe-area-inset-bottom, 0px)));
   }
 
   .ll-panel {
@@ -680,7 +713,7 @@ a.ll-btn.secondary {
 
 @media (max-width: 480px) {
   .ll-page {
-    padding: 10px 10px 20px;
+    padding: 10px 10px calc(104px + env(safe-area-inset-bottom, 0px));
   }
 
   .ll-brand img {
