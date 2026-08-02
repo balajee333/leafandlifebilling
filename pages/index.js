@@ -21,7 +21,12 @@ function DeleteIconButton({ onClick, label }) {
 function PaidBadge({ paid }) {
   return (
     <span className={`ll-paid-badge ${paid ? 'is-paid' : 'is-unpaid'}`}>
-      {paid ? 'Paid' : 'Not Yet'}
+      {!paid && (
+        <svg className='ll-paid-icon' viewBox='0 0 24 24' width='14' height='14' aria-hidden='true' focusable='false'>
+          <path fill='currentColor' d='M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8zm.75-12.5h-1.5v5.25l4.5 2.7.75-1.23-3.75-2.22z' />
+        </svg>
+      )}
+      {paid ? 'Paid' : 'Pending'}
     </span>
   );
 }

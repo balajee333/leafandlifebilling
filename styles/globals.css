@@ -293,6 +293,7 @@ a.ll-btn.secondary {
 .ll-paid-badge {
   display: inline-flex;
   align-items: center;
+  gap: 5px;
   padding: 4px 10px;
   border-radius: 6px;
   font-size: 12px;
@@ -300,6 +301,11 @@ a.ll-btn.secondary {
   line-height: 1.3;
   letter-spacing: 0.01em;
   white-space: nowrap;
+}
+
+.ll-paid-icon {
+  display: block;
+  flex-shrink: 0;
 }
 
 .ll-paid-badge.is-paid {
