@@ -297,11 +297,23 @@ export default function BillPage() {
                   <tbody>
                     {items.map((item, index) => (
                       <tr key={index}>
-                        <td><input value={item.product} disabled={isDelivered} onChange={e => updateItem(index, 'product', e.target.value)} placeholder='Product' /></td>
-                        <td><input type='number' min='0' value={item.qty} disabled={isDelivered} onChange={e => updateItem(index, 'qty', e.target.value)} /></td>
-                        <td><input type='number' step='0.01' min='0' value={item.price === '' || item.price == null ? '' : item.price} disabled={isDelivered} onChange={e => updateItem(index, 'price', e.target.value)} /></td>
-                        <td>₹ {(Number(item.qty || 0) * Number(item.price || 0)).toFixed(2)}</td>
-                        <td><button className='delete-btn' type='button' disabled={isDelivered} onClick={() => removeItem(index)}>🗑</button></td>
+                        <td>
+                          <span className='item-line-label'>Product</span>
+                          <input value={item.product} disabled={isDelivered} onChange={e => updateItem(index, 'product', e.target.value)} placeholder='Product' />
+                        </td>
+                        <td>
+                          <span className='item-line-label'>Qty</span>
+                          <input type='number' min='0' value={item.qty} disabled={isDelivered} onChange={e => updateItem(index, 'qty', e.target.value)} />
+                        </td>
+                        <td>
+                          <span className='item-line-label'>Price</span>
+                          <input type='number' step='0.01' min='0' value={item.price === '' || item.price == null ? '' : item.price} disabled={isDelivered} onChange={e => updateItem(index, 'price', e.target.value)} />
+                        </td>
+                        <td>
+                          <span className='item-line-label'>Total</span>
+                          ₹ {(Number(item.qty || 0) * Number(item.price || 0)).toFixed(2)}
+                        </td>
+                        <td><button className='delete-btn' type='button' disabled={isDelivered} onClick={() => removeItem(index)}>Delete</button></td>
                       </tr>
                     ))}
                   </tbody>
@@ -382,34 +394,36 @@ export default function BillPage() {
       </div>
 
       <style jsx>{`
-        :global(body){margin:0;font-family:Segoe UI,Arial,sans-serif;background:linear-gradient(135deg,#f4f8f4 0%,#eaf4ea 100%);color:#223126}
-        .page{max-width:1000px;margin:24px auto;padding:24px}
-        .editor-layout{display:grid;gap:20px}
+        :global(html),:global(body){margin:0;max-width:100%;overflow-x:hidden}
+        :global(body){font-family:Segoe UI,Arial,sans-serif;background:linear-gradient(135deg,#f4f8f4 0%,#eaf4ea 100%);color:#223126}
+        .page{max-width:1000px;margin:24px auto;padding:24px;width:100%;box-sizing:border-box;overflow-x:hidden}
+        .editor-layout{display:grid;gap:20px;max-width:100%}
         .header{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap}
         .header-main{display:flex;align-items:center;gap:12px;min-width:0}
         .brand-link{display:inline-flex;flex-shrink:0;line-height:0}
         .header-logo{width:52px;height:52px;object-fit:contain;display:block}
-        .header h1{margin:0;color:#2e7d32}
+        .header h1{margin:0;color:#2e7d32;font-size:28px}
         .header p{margin:6px 0 0;color:#4f6b53;max-width:580px}
         .actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:flex-end}
-        button,a.button{display:inline-flex;align-items:center;justify-content:center;border:none;border-radius:10px;padding:10px 14px;background:#2e7d32;color:#fff;text-decoration:none;cursor:pointer;font-weight:700;min-height:40px;font-size:15px;line-height:1.3}
+        button,a.button{display:inline-flex;align-items:center;justify-content:center;border:none;border-radius:10px;padding:10px 14px;background:#2e7d32;color:#fff;text-decoration:none;cursor:pointer;font-weight:700;min-height:40px;font-size:15px;line-height:1.3;font-family:inherit}
         .button.secondary{background:#f2f7f2;color:#2e7d32;border:1px solid #d7e6da}
         .delete-action{background:#fff;color:#c62828;border:1px solid #f2c7c7}
-        .panel{background:#fff;border-radius:18px;padding:24px;box-shadow:0 18px 40px rgba(26,61,35,.08);margin-top:18px}
+        .panel{background:#fff;border-radius:18px;padding:24px;box-shadow:0 18px 40px rgba(26,61,35,.08);margin-top:18px;max-width:100%;box-sizing:border-box;overflow:hidden}
         .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;align-items:start}
-        .field{display:flex;flex-direction:column;gap:6px;margin-bottom:12px}
+        .field{display:flex;flex-direction:column;gap:6px;margin-bottom:12px;min-width:0}
         label{font-size:11px;color:#6b7a6f;font-weight:700;letter-spacing:.08em;text-transform:uppercase}
-        input{width:100%;padding:11px 12px;border:1px solid #dbe7de;border-radius:10px;background:#fcfdfc;box-sizing:border-box}
+        input{width:100%;padding:11px 12px;border:1px solid #dbe7de;border-radius:10px;background:#fcfdfc;box-sizing:border-box;font-size:16px;font-family:inherit;max-width:100%}
         input:focus{outline:none;border-color:#2e7d32}
-        .table-shell{border:1px solid #e8efe9;border-radius:14px;overflow:hidden;background:#fff;margin-top:10px}
+        .table-shell{border:1px solid #e8efe9;border-radius:14px;overflow:hidden;background:#fff;margin-top:10px;max-width:100%}
         .add-row-btn{margin-top:12px;align-self:flex-start}
         .save-draft-btn{margin-top:10px;align-self:stretch;width:100%}
-        table{width:100%;border-collapse:collapse}
+        table{width:100%;border-collapse:collapse;min-width:0}
         th,td{padding:12px 12px;border-bottom:1px solid #e8efe9;text-align:left}
         th{background:#f5faf5;color:#2e7d32;font-size:12px;text-transform:uppercase;letter-spacing:.06em}
         .delete-btn{background:#fff;color:#c62828;border:1px solid #f2c7c7;padding:8px 10px;border-radius:10px}
-        .total{display:flex;justify-content:flex-end;align-items:center;gap:10px;margin-top:18px;padding:14px 18px;border:1px solid #dce8de;border-radius:12px;background:#f7fbf7;width:fit-content;margin-left:auto;font-weight:700;color:#1b5e20}
+        .total{display:flex;justify-content:flex-end;align-items:center;gap:10px;margin-top:18px;padding:14px 18px;border:1px solid #dce8de;border-radius:12px;background:#f7fbf7;width:fit-content;margin-left:auto;font-weight:700;color:#1b5e20;box-sizing:border-box}
         .status-pill{display:inline-flex;align-items:center;justify-content:center;padding:8px 14px;border-radius:999px;background:#eef7ed;color:#2e7d32;font-weight:700}
+        .item-line-label{display:none}
         .print-layout{display:none}
         .invoice-card{background:#fff;border:1px solid #e5eee4;border-radius:24px;padding:28px;box-shadow:none}
         .invoice-header{display:flex;justify-content:space-between;align-items:center;gap:16px;border-bottom:1px solid #e3ece4;padding-bottom:16px;margin-bottom:16px}
@@ -437,25 +451,34 @@ export default function BillPage() {
           .footer-row{flex-direction:column}
           .scan-block{margin-left:0;align-self:flex-start}
           .actions{justify-content:flex-start}
-          .page{margin:0 auto;padding:16px}
-          .panel{padding:18px;margin-top:14px}
+          .page{margin:0;padding:14px 12px 24px;max-width:none}
+          .panel{padding:18px;margin-top:14px;border-radius:14px}
           .print-layout{padding:0}
           .status-pill{justify-content:flex-start;text-align:left;width:fit-content;max-width:100%;white-space:normal}
         }
         @media screen and (max-width:700px){
           .header{align-items:flex-start;flex-direction:column}
+          .header h1{font-size:22px}
+          .header p{display:none}
+          .header-logo{width:44px;height:44px}
           .actions{width:100%;justify-content:flex-start;gap:8px}
           .actions button,.actions a.button{width:100%;box-sizing:border-box;font-size:16px;padding:12px 16px;min-height:48px;line-height:1.35}
-          .add-row-btn,.save-draft-btn{font-size:16px;padding:12px 16px;min-height:48px;width:100%;box-sizing:border-box}
-          .table-shell{overflow-x:auto;-webkit-overflow-scrolling:touch}
-          .table-shell table{min-width:520px}
+          .add-row-btn,.save-draft-btn,.delete-btn{font-size:16px;padding:12px 16px;min-height:48px;width:100%;box-sizing:border-box}
+          .table-shell{border:none;background:transparent;overflow:visible}
+          .table-shell table,.table-shell tbody{display:block;width:100%}
+          .table-shell thead{display:none}
+          .table-shell tr{display:grid;grid-template-columns:1fr 1fr;gap:8px 10px;border:1px solid #e0ebe2;border-radius:12px;padding:12px;margin-bottom:10px;background:#fcfdfc}
+          .table-shell td{display:block;border:none;padding:0;min-width:0}
+          .table-shell td:nth-child(1){grid-column:1 / -1}
+          .table-shell td:nth-child(4){display:flex;align-items:flex-end;font-weight:700;color:#1b5e20;padding-bottom:10px}
+          .table-shell td:nth-child(5){grid-column:1 / -1}
+          .item-line-label{display:block;font-size:11px;color:#6b7a6f;font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px}
           .field.item-section{padding-bottom:0}
-          .total{width:100%;justify-content:space-between;box-sizing:border-box}
-          input{font-size:16px}
+          .total{width:100%;justify-content:space-between}
         }
         @media print{
-          :global(body){background:#fff}
-          .page{margin:0;padding:0;max-width:none}
+          :global(body){background:#fff;overflow:visible}
+          .page{margin:0;padding:0;max-width:none;overflow:visible}
           .editor-layout,.actions button,.actions a,.add-row-btn,.save-draft-btn{display:none!important}
           .print-layout{display:block!important}
           .invoice-card{box-shadow:none;border:0;padding:0}
