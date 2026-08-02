@@ -105,7 +105,7 @@ export default function Home() {
   useEffect(() => {
     if (!router.isReady) return;
     const q = router.query.tab;
-    const nextTab = q === 'bills' || q === 'past' ? q : 'orders';
+    const nextTab = q === 'past' ? 'past' : 'orders';
     setTab(nextTab);
   }, [router.isReady, router.query.tab]);
 
@@ -530,15 +530,11 @@ export default function Home() {
             </a>
             <div className='ll-brand-title'>
               <h1>Leaf & Life</h1>
-              <p>Orders and bills, sorted by most recent activity.</p>
+              <p>Orders sorted by most recent activity.</p>
             </div>
           </div>
           <div className='ll-top-actions'>
-            {tab === 'bills' ? (
-              <a className='ll-btn' href='/bill'>Create New Bill</a>
-            ) : (
-              <a className='ll-btn' href='/order'>Create New Order</a>
-            )}
+            <a className='ll-btn' href='/order'>Create New Order</a>
             <button type='button' className='ll-btn' onClick={loadAll}>Refresh</button>
           </div>
         </header>
@@ -552,9 +548,7 @@ export default function Home() {
             className='ll-search-input'
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
-            placeholder={tab === 'bills'
-              ? 'Search flat name, flat #, customer, bill #'
-              : 'Search flat name, flat #, customer, order #'}
+            placeholder='Search flat name, flat #, customer, order #'
             aria-label='Search list'
           />
           {searchQuery ? (
@@ -566,7 +560,6 @@ export default function Home() {
 
         <div className='ll-tabs'>
           <button type='button' className={tab === 'orders' ? 'll-tab active' : 'll-tab'} onClick={() => selectTab('orders')}>Orders</button>
-          <button type='button' className={tab === 'bills' ? 'll-tab active' : 'll-tab'} onClick={() => selectTab('bills')}>Bills</button>
           <button type='button' className={tab === 'past' ? 'll-tab active' : 'll-tab'} onClick={() => selectTab('past')}>Past Orders</button>
         </div>
 
@@ -579,21 +572,6 @@ export default function Home() {
             <section className='ll-panel'>
               <h2>Delivered · Not Paid <span className='ll-section-count'>({deliveredUnpaidOrders.length})</span></h2>
               {renderOrdersTable(deliveredUnpaidOrders, 'No delivered unpaid orders.', { showPaid: true, sectionId: 'orders-delivered-unpaid' })}
-            </section>
-          </div>
-        ) : tab === 'bills' ? (
-          <div className='ll-grid'>
-            <section className='ll-panel'>
-              <h2>Not Delivered <span className='ll-section-count'>({notDeliveredBills.length})</span></h2>
-              {renderBillsTable(notDeliveredBills, 'No undelivered bills.', { showPaid: true, sectionId: 'bills-not-delivered' })}
-            </section>
-            <section className='ll-panel'>
-              <h2>Delivered · Not Paid <span className='ll-section-count'>({deliveredUnpaidBills.length})</span></h2>
-              {renderBillsTable(deliveredUnpaidBills, 'No delivered unpaid bills.', { showPaid: true, sectionId: 'bills-delivered-unpaid' })}
-            </section>
-            <section className='ll-panel'>
-              <h2>Delivered · Paid <span className='ll-section-count'>({deliveredPaidBills.length})</span></h2>
-              {renderBillsTable(deliveredPaidBills, 'No delivered paid bills.', { sectionId: 'bills-delivered-paid' })}
             </section>
           </div>
         ) : (

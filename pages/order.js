@@ -66,6 +66,11 @@ const icons = {
       <path fill='currentColor' d='M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z' />
     </svg>
   ),
+  print: (
+    <svg viewBox='0 0 24 24' width='20' height='20' aria-hidden='true' focusable='false'>
+      <path fill='currentColor' d='M19 8H5a3 3 0 0 0-3 3v6h4v4h12v-4h4v-6a3 3 0 0 0-3-3zM16 19H8v-5h8v5zm3-7.5a1 1 0 1 1 1-1 1 1 0 0 1-1 1zM17 3H7v4h10V3z' />
+    </svg>
+  ),
   save: (
     <svg viewBox='0 0 24 24' width='20' height='20' aria-hidden='true' focusable='false'>
       <path fill='currentColor' d='M17 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V7l-4-4zm-5 16a3 3 0 1 1 3-3 3 3 0 0 1-3 3zm3-10H5V5h10v4z' />
@@ -80,6 +85,7 @@ export default function OrderPage() {
   const [currentFileName, setCurrentFileName] = useState('');
   const [orderNumber, setOrderNumber] = useState('---');
   const [billFileName, setBillFileName] = useState('');
+  const [billNumber, setBillNumber] = useState('---');
   const [status, setStatus] = useState('draft');
   const [paid, setPaid] = useState(false);
   const [customerName, setCustomerName] = useState('');
@@ -131,6 +137,7 @@ export default function OrderPage() {
     setCurrentFileName('');
     setOrderNumber('---');
     setBillFileName('');
+    setBillNumber('---');
     setStatus('draft');
     setPaid(false);
     setCustomerName('');
@@ -139,6 +146,21 @@ export default function OrderPage() {
     setCustomerPhone('');
     setDate(today);
     setItems([emptyItem]);
+  }
+
+  async function loadLinkedBillNumber(name) {
+    if (!name) {
+      setBillNumber('---');
+      return;
+    }
+    try {
+      const res = await fetch(`/api/bill?fileName=${encodeURIComponent(name)}`);
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) setBillNumber(data.billNumber || '---');
+      else setBillNumber('---');
+    } catch {
+      setBillNumber('---');
+    }
   }
 
   async function loadOrder(name) {
@@ -161,6 +183,7 @@ export default function OrderPage() {
       setCustomerPhone(data.customerPhone || '');
       setDate(data.date || today);
       setItems(Array.isArray(data.items) && data.items.length ? data.items : [emptyItem]);
+      await loadLinkedBillNumber(data.billFileName || '');
     } catch (error) {
       alert('Could not load order.');
     } finally {
@@ -181,6 +204,7 @@ export default function OrderPage() {
       setCurrentFileName('');
       setOrderNumber('---');
       setBillFileName('');
+      setBillNumber('---');
       setStatus('draft');
       setPaid(false);
       setCustomerName(data.customerName || '');
@@ -202,6 +226,21 @@ export default function OrderPage() {
   function createAnotherOrder() {
     if (!currentFileName) return;
     router.push(`/order?copyFrom=${encodeURIComponent(currentFileName)}`);
+  }
+
+  function printLinkedBill() {
+    if (!billFileName) {
+      alert('Save the order first to create a linked bill before printing.');
+      return;
+    }
+    const pdfTitle = `LeafAndLifeBill-${billNumber || orderNumber || '000'}`;
+    const originalTitle = document.title;
+    document.title = pdfTitle;
+    window.onafterprint = () => {
+      document.title = originalTitle;
+      window.onafterprint = null;
+    };
+    window.print();
   }
 
   function updateItem(index, field, value) {
@@ -277,6 +316,7 @@ export default function OrderPage() {
     setStatus(result.status || targetStatus);
     setPaid(result.paid ?? paidState);
     await loadFlatNames();
+    await loadLinkedBillNumber(result.billFileName || billFileName || '');
     router.replace({ pathname: '/order', query: { fileName: result.fileName } }, undefined, { shallow: true });
     alert(message || (targetStatus === 'delivered' ? 'Order marked as delivered. Linked bill updated.' : 'Order draft saved. Linked draft bill created/updated.'));
     return true;
@@ -331,7 +371,7 @@ export default function OrderPage() {
   return (
     <>
       <Head>
-        <title>Order Editor</title>
+        <title>Order</title>
       </Head>
 
       <div className='page'>
@@ -342,7 +382,7 @@ export default function OrderPage() {
               <img className='header-logo' src='/logo.png' alt='Leaf & Life logo' />
             </a>
             <div className='header-title'>
-              <h1>Order Editor</h1>
+              <h1>Order</h1>
               <p>Create orders for flat deliveries. Saving creates a linked draft bill automatically.</p>
             </div>
           </div>
@@ -350,9 +390,7 @@ export default function OrderPage() {
             {canCreateAnother && (
               <IconBtn onClick={createAnotherOrder} disabled={loading} label='Create Another Order'>{icons.plus}</IconBtn>
             )}
-            {billFileName && (
-              <IconBtn href={`/bill?fileName=${encodeURIComponent(billFileName)}`} label='Open Linked Bill'>{icons.bill}</IconBtn>
-            )}
+            <IconBtn onClick={printLinkedBill} disabled={loading || !billFileName} label='Print / Save PDF'>{icons.print}</IconBtn>
             {!isDelivered && (
               <IconBtn primary onClick={markDelivered} disabled={loading} label='Mark as Delivered'>{icons.deliver}</IconBtn>
             )}
@@ -368,6 +406,7 @@ export default function OrderPage() {
           </div>
         </div>
 
+        <div className='editor-layout'>
         <div className='panel'>
           <div className='grid'>
             <div className='field'>
@@ -466,12 +505,77 @@ export default function OrderPage() {
 
           <div className='total'><span>Total</span><span>₹ {total.toFixed(2)}</span></div>
         </div>
+        </div>
+
+        <div className='print-layout'>
+          <div className='invoice-card'>
+            <div className='invoice-header'>
+              <div className='logo-block'>
+                <div className='logo-frame'>
+                  <img className='brand-logo' src='/logo.png' alt='Leaf & Life logo' />
+                </div>
+                <div className='brand-block'>
+                  <h2>Leaf & Life Nursery</h2>
+                  <p>Bill / Delivery receipt</p>
+                </div>
+              </div>
+            </div>
+
+            <div className='invoice-meta'>
+              <div className='meta-box'><div className='meta-label'>Bill #</div><div className='meta-value'>{billNumber}</div></div>
+              <div className='meta-box'><div className='meta-label'>Order #</div><div className='meta-value'>{orderNumber}</div></div>
+              <div className='meta-box'><div className='meta-label'>Date</div><div className='meta-value'>{date}</div></div>
+              <div className='meta-box'><div className='meta-label'>Customer</div><div className='meta-value'>{customerName || '—'}</div></div>
+              <div className='meta-box'><div className='meta-label'>Phone</div><div className='meta-value'>{customerPhone || '—'}</div></div>
+              {(flatName || flatNumber) && (
+                <>
+                  <div className='meta-box'><div className='meta-label'>Flat Name</div><div className='meta-value'>{flatName || '—'}</div></div>
+                  <div className='meta-box'><div className='meta-label'>Flat Number</div><div className='meta-value'>{flatNumber || '—'}</div></div>
+                </>
+              )}
+            </div>
+
+            <table className='print-table'>
+              <thead>
+                <tr><th>Product</th><th>Qty</th><th>Price</th><th>Total</th></tr>
+              </thead>
+              <tbody>
+                {items.length === 0 ? (
+                  <tr><td colSpan='4'>No items added</td></tr>
+                ) : items.map((item, index) => (
+                  <tr key={index}>
+                    <td>{item.product || '—'}</td>
+                    <td>{item.qty}</td>
+                    <td>₹ {Number(item.price || 0).toFixed(2)}</td>
+                    <td>₹ {(Number(item.qty || 0) * Number(item.price || 0)).toFixed(2)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
+            <div className='print-total'><span>Total</span><span>₹ {total.toFixed(2)}</span></div>
+
+            <div className='footer-row'>
+              <div className='contact-block'>
+                <b>Leaf & Life Nursery</b><br />
+                Kelambakkam, Chennai<br />
+                9942093711<br />
+                @leafandlifenursery
+              </div>
+              <div className='scan-block'>
+                <div className='scan-label'>Scan to Pay</div>
+                <img src='/QR-code.jpeg' alt='Scan to pay QR code' />
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <style jsx>{`
         :global(html),:global(body){margin:0;max-width:100%;overflow-x:hidden}
         :global(body){font-family:Segoe UI,Arial,sans-serif;background:linear-gradient(135deg,#f4f8f4 0%,#eaf4ea 100%);color:#223126}
         .page{max-width:1000px;margin:24px auto;padding:24px;width:100%;box-sizing:border-box;overflow-x:hidden}
+        .editor-layout{display:grid;gap:20px;max-width:100%}
         .header{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap}
         .header-main{display:flex;align-items:center;gap:10px;min-width:0;flex:1}
         .header-title{min-width:0}
@@ -504,8 +608,32 @@ export default function OrderPage() {
         .total{display:flex;justify-content:flex-end;align-items:center;gap:10px;margin-top:18px;padding:14px 18px;border:1px solid #dce8de;border-radius:12px;background:#f7fbf7;width:fit-content;margin-left:auto;font-weight:700;color:#1b5e20;box-sizing:border-box}
         .status-pill{display:inline-flex;align-items:center;justify-content:center;padding:8px 14px;border-radius:999px;background:#eef7ed;color:#2e7d32;font-weight:700}
         .item-line-label{display:none}
+        .print-layout{display:none}
+        .invoice-card{background:#fff;border:1px solid #e5eee4;border-radius:24px;padding:28px;box-shadow:none}
+        .invoice-header{display:flex;justify-content:space-between;align-items:center;gap:16px;border-bottom:1px solid #e3ece4;padding-bottom:16px;margin-bottom:16px}
+        .logo-block{display:flex;align-items:center;gap:12px}
+        .logo-frame{width:72px;height:72px;display:flex;align-items:center;justify-content:center;border-radius:18px;background:#f4fbf4;overflow:hidden;border:1px solid #d7e8d7}
+        .brand-logo{max-width:100%;max-height:100%;display:block;object-fit:contain}
+        .brand-block h2{margin:0;color:#2e7d32;font-size:22px}
+        .brand-block p{margin:4px 0 0;color:#4f6b53;font-size:13px}
+        .invoice-meta{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-bottom:16px}
+        .meta-box{background:#f7fbf7;border:1px solid #e3ece4;border-radius:12px;padding:10px 12px}
+        .meta-label{font-size:11px;color:#6b7a6f;text-transform:uppercase;letter-spacing:.08em;font-weight:700}
+        .meta-value{font-size:14px;color:#223126;margin-top:4px}
+        .print-table{width:100%;border-collapse:collapse;margin-top:8px}
+        .print-table th,.print-table td{padding:10px;border-bottom:1px solid #e8efe9;text-align:left}
+        .print-table th{background:#f5faf5;color:#2e7d32;font-size:12px;text-transform:uppercase;letter-spacing:.06em}
+        .print-total{display:flex;justify-content:flex-end;align-items:center;gap:10px;margin-top:16px;padding:12px 16px;border:1px solid #dce8de;border-radius:12px;background:#f7fbf7;width:fit-content;margin-left:auto;font-weight:700;color:#1b5e20}
+        .footer-row{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-top:20px;padding-top:16px;border-top:1px solid #e3ece4;width:100%}
+        .contact-block{font-size:13px;line-height:1.6;color:#4f6b53;flex:1;min-width:0}
+        .scan-block{display:flex;flex-direction:column;align-items:center;text-align:center;margin-left:auto;flex:0 0 auto;width:180px}
+        .scan-label{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:#2e7d32;font-weight:700;margin-bottom:8px;width:100%;text-align:center}
+        .scan-block img{display:block;width:180px;max-width:180px;height:auto;border:1px solid #e6eee7;border-radius:18px;padding:8px;background:#fff;box-sizing:border-box}
         @media (max-width:900px){
           .grid{grid-template-columns:1fr}
+          .invoice-meta{grid-template-columns:1fr}
+          .footer-row{flex-direction:column}
+          .scan-block{margin-left:0;align-self:flex-start}
           .actions{justify-content:flex-start}
           .page{margin:0;padding:14px 12px 24px;max-width:none}
           .panel{padding:18px;margin-top:14px;border-radius:14px}
@@ -530,6 +658,18 @@ export default function OrderPage() {
           .table-shell td:nth-child(5){grid-column:1 / -1;display:flex;justify-content:flex-end}
           .item-line-label{display:block;font-size:11px;color:#6b7a6f;font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px}
           .total{width:100%;justify-content:space-between}
+        }
+        @media print{
+          :global(body){background:#fff;overflow:visible}
+          .page{margin:0;padding:0;max-width:none;overflow:visible}
+          .editor-layout,.header,.actions,.add-row-btn,.save-draft-btn{display:none!important}
+          .print-layout{display:block!important}
+          .invoice-card{box-shadow:none;border:0;padding:0}
+          .footer-row{display:flex!important;flex-direction:row!important;justify-content:space-between!important;align-items:flex-start!important;width:100%!important}
+          .contact-block{flex:1 1 auto}
+          .scan-block{display:flex!important;flex-direction:column!important;align-items:center!important;margin-left:auto!important;margin-right:0!important;width:180px!important;flex:0 0 180px!important}
+          .scan-label{text-align:center!important;width:100%!important}
+          .scan-block img{width:160px!important;max-width:160px!important}
         }
       `}</style>
     </>

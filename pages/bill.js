@@ -263,7 +263,7 @@ export default function BillPage() {
       alert('Could not delete bill: ' + (err.error || 'Unknown error'));
       return;
     }
-    router.push('/?tab=bills');
+    router.push('/?tab=orders');
   }
 
   function printBill() {
@@ -287,7 +287,7 @@ export default function BillPage() {
         <div className='editor-layout'>
           <div className='header'>
             <div className='header-main'>
-              <IconBtn href='/?tab=bills' label='Back to Bills'>{icons.back}</IconBtn>
+              <IconBtn href='/?tab=orders' label='Back to Orders'>{icons.back}</IconBtn>
               <a className='brand-link' href='/' aria-label='Go to home'>
                 <img className='header-logo' src='/logo.png' alt='Leaf & Life logo' />
               </a>
