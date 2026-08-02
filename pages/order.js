@@ -1,5 +1,5 @@
 import Head from 'next/head';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/router';
 
 const today = new Date().toISOString().slice(0, 10);
@@ -7,7 +7,7 @@ const emptyItem = { product: '', qty: 1, price: '' };
 
 export default function OrderPage() {
   const router = useRouter();
-  const { fileName } = router.query;
+  const { fileName, copyFrom } = router.query;
 
   const [currentFileName, setCurrentFileName] = useState('');
   const [orderNumber, setOrderNumber] = useState('---');
@@ -22,9 +22,11 @@ export default function OrderPage() {
   const [items, setItems] = useState([emptyItem]);
   const [loading, setLoading] = useState(false);
   const [flatNames, setFlatNames] = useState([]);
+  const skipResetRef = useRef(false);
 
   const total = useMemo(() => items.reduce((sum, item) => sum + Number(item.qty || 0) * Number(item.price || 0), 0), [items]);
   const isDelivered = status === 'delivered';
+  const canCreateAnother = Boolean(currentFileName);
 
   useEffect(() => {
     loadFlatNames();
@@ -33,11 +35,19 @@ export default function OrderPage() {
   useEffect(() => {
     if (!router.isReady) return;
     if (fileName) {
-      loadOrder(fileName);
-    } else {
-      resetOrder();
+      loadOrder(String(fileName));
+      return;
     }
-  }, [router.isReady, fileName]);
+    if (copyFrom) {
+      prefillFromOrder(String(copyFrom));
+      return;
+    }
+    if (skipResetRef.current) {
+      skipResetRef.current = false;
+      return;
+    }
+    resetOrder();
+  }, [router.isReady, fileName, copyFrom]);
 
   async function loadFlatNames() {
     try {
@@ -88,6 +98,42 @@ export default function OrderPage() {
     } finally {
       setLoading(false);
     }
+  }
+
+  async function prefillFromOrder(sourceFileName) {
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/order?fileName=${encodeURIComponent(sourceFileName)}`);
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        alert(data.error || 'Could not load customer details.');
+        resetOrder();
+        return;
+      }
+      setCurrentFileName('');
+      setOrderNumber('---');
+      setBillFileName('');
+      setStatus('draft');
+      setPaid(false);
+      setCustomerName(data.customerName || '');
+      setFlatName(data.flatName || '');
+      setFlatNumber(data.flatNumber || '');
+      setCustomerPhone(data.customerPhone || '');
+      setDate(today);
+      setItems([emptyItem]);
+      skipResetRef.current = true;
+      router.replace('/order', undefined, { shallow: true });
+    } catch (error) {
+      alert('Could not create another order.');
+      resetOrder();
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function createAnotherOrder() {
+    if (!currentFileName) return;
+    router.push(`/order?copyFrom=${encodeURIComponent(currentFileName)}`);
   }
 
   function updateItem(index, field, value) {
@@ -238,6 +284,11 @@ export default function OrderPage() {
           </div>
           <div className='actions'>
             <a className='button secondary' href='/?tab=orders'>Back to Orders</a>
+            {canCreateAnother && (
+              <button className='button secondary' type='button' onClick={createAnotherOrder} disabled={loading}>
+                Create Another Order
+              </button>
+            )}
             {billFileName && (
               <a className='button secondary' href={`/bill?fileName=${encodeURIComponent(billFileName)}`}>Open Linked Bill</a>
             )}
