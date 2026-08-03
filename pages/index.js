@@ -142,7 +142,8 @@ export default function Home() {
 
   useEffect(() => {
     if (!router.isReady) return;
-    setTab(router.query.tab === 'past' ? 'past' : 'orders');
+    const q = router.query.tab;
+    setTab(q === 'past' || q === 'items' ? q : 'orders');
   }, [router.isReady, router.query.tab]);
 
   useEffect(() => {
@@ -230,6 +231,41 @@ export default function Home() {
   const deliveredPaidOrders = useMemo(
     () => pastOrders.filter(order => matchesSearch(order, { numberKey: 'orderNumber' })),
     [pastOrders, searchQuery]
+  );
+
+  const itemsToDeliver = useMemo(() => {
+    const totals = new Map();
+    for (const order of orders) {
+      if (order.status === 'delivered') continue;
+      for (const item of order.items || []) {
+        const product = String(item.product || '').trim();
+        if (!product) continue;
+        const key = product.toLowerCase();
+        const qty = Number(item.qty || 0);
+        const existing = totals.get(key);
+        if (existing) {
+          existing.qty += qty;
+          existing.orders.add(order.fileName);
+        } else {
+          totals.set(key, { product, qty, orders: new Set([order.fileName]) });
+        }
+      }
+    }
+
+    const q = searchQuery.trim().toLowerCase();
+    return Array.from(totals.values())
+      .map(row => ({
+        product: row.product,
+        qty: row.qty,
+        orderCount: row.orders.size
+      }))
+      .filter(row => !q || row.product.toLowerCase().includes(q))
+      .sort((a, b) => a.product.localeCompare(b.product, undefined, { sensitivity: 'base' }));
+  }, [orders, searchQuery]);
+
+  const itemsToDeliverTotalQty = useMemo(
+    () => itemsToDeliver.reduce((sum, item) => sum + Number(item.qty || 0), 0),
+    [itemsToDeliver]
   );
 
   function groupByFlatName(list, { sortBy = 'updated' } = {}) {
@@ -382,6 +418,54 @@ export default function Home() {
     );
   }
 
+  function renderItemsToDeliver() {
+    if (loading) {
+      return <p className='ll-empty'>Loading items…</p>;
+    }
+    if (itemsToDeliver.length === 0) {
+      return <p className='ll-empty'>No items to deliver.</p>;
+    }
+
+    return (
+      <>
+        <div className='ll-table-scroll ll-desktop-only'>
+          <table className='ll-table ll-items-table'>
+            <thead>
+              <tr>
+                <th className='col-item'>Item</th>
+                <th className='col-qty'>Qty</th>
+                <th className='col-orders'>Orders</th>
+              </tr>
+            </thead>
+            <tbody>
+              {itemsToDeliver.map(item => (
+                <tr key={item.product} className='ll-data-row ll-data-row-static'>
+                  <td className='col-item'>{item.product}</td>
+                  <td className='col-qty'><strong>{item.qty}</strong></td>
+                  <td className='col-orders'>{item.orderCount}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        <div className='ll-mobile-list ll-mobile-only'>
+          <div className='ll-mobile-cards ll-items-cards'>
+            {itemsToDeliver.map(item => (
+              <article key={item.product} className='ll-mobile-card ll-item-card'>
+                <div className='ll-item-card-name'>{item.product}</div>
+                <div className='ll-item-card-meta'>
+                  <span><strong>{item.qty}</strong> to deliver</span>
+                  <span>{item.orderCount} order{item.orderCount === 1 ? '' : 's'}</span>
+                </div>
+              </article>
+            ))}
+          </div>
+        </div>
+      </>
+    );
+  }
+
   return (
     <>
       <Head>
@@ -410,7 +494,7 @@ export default function Home() {
             className='ll-search-input'
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
-            placeholder='Search flat name, flat #, customer, order #'
+            placeholder={tab === 'items' ? 'Search item name' : 'Search flat name, flat #, customer, order #'}
             aria-label='Search list'
           />
           {searchQuery ? (
@@ -422,6 +506,7 @@ export default function Home() {
 
         <div className='ll-tabs'>
           <button type='button' className={tab === 'orders' ? 'll-tab active' : 'll-tab'} onClick={() => selectTab('orders')}>Orders</button>
+          <button type='button' className={tab === 'items' ? 'll-tab active' : 'll-tab'} onClick={() => selectTab('items')}>Items to Deliver</button>
           <button type='button' className={tab === 'past' ? 'll-tab active' : 'll-tab'} onClick={() => selectTab('past')}>Past Orders</button>
         </div>
 
@@ -434,6 +519,18 @@ export default function Home() {
             <section className='ll-panel'>
               <h2>Delivered · Not Paid <span className='ll-section-count'>({deliveredUnpaidOrders.length})</span></h2>
               {renderOrdersTable(deliveredUnpaidOrders, 'No delivered unpaid orders.', { showPaid: true, sectionId: 'orders-delivered-unpaid' })}
+            </section>
+          </div>
+        ) : tab === 'items' ? (
+          <div className='ll-grid'>
+            <section className='ll-panel'>
+              <h2>
+                Items to be delivered
+                <span className='ll-section-count'>
+                  ({loading ? '…' : `${itemsToDeliver.length} items · ${itemsToDeliverTotalQty} qty`})
+                </span>
+              </h2>
+              {renderItemsToDeliver()}
             </section>
           </div>
         ) : (

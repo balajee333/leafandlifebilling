@@ -312,6 +312,39 @@ a.ll-btn.secondary {
 .ll-table .col-status { width: 12%; }
 .ll-table .col-paid { width: 12%; }
 .ll-table .col-action { width: 14%; }
+.ll-table .col-item { width: 64%; }
+.ll-table .col-orders { width: 16%; }
+
+.ll-data-row-static {
+  cursor: default;
+}
+
+.ll-data-row-static:hover {
+  background: transparent;
+}
+
+.ll-item-card {
+  padding: 12px;
+}
+
+.ll-item-card-name {
+  font-weight: 700;
+  color: #223126;
+  margin-bottom: 6px;
+}
+
+.ll-item-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  color: #5f7264;
+  font-size: 13px;
+}
+
+.ll-item-card-meta strong {
+  color: #1b5e20;
+  font-size: 15px;
+}
 
 .ll-table tr.ll-flat-row td {
   background: #eef6ef;
@@ -743,11 +776,14 @@ a.ll-btn.secondary {
 
   .ll-tabs {
     margin-bottom: 12px;
+    gap: 6px;
   }
 
   .ll-tab {
-    padding: 12px 14px;
+    padding: 10px 8px;
     min-height: 44px;
+    font-size: 12px;
+    line-height: 1.25;
   }
 
   .ll-panel {
