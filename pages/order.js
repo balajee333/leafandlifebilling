@@ -118,6 +118,7 @@ export default function OrderPage() {
   const [flatNames, setFlatNames] = useState([]);
   const [confirmDialog, setConfirmDialog] = useState(null);
   const [confirmBusy, setConfirmBusy] = useState(false);
+  const [infoDialog, setInfoDialog] = useState(null);
   const skipResetRef = useRef(false);
 
   const total = useMemo(() => items.reduce((sum, item) => sum + Number(item.qty || 0) * Number(item.price || 0), 0), [items]);
@@ -318,7 +319,7 @@ export default function OrderPage() {
     return true;
   }
 
-  async function persistOrder(targetStatus, paidState = paid, message) {
+  async function persistOrder(targetStatus, paidState = paid, message, { useInfoModal = false } = {}) {
     const payload = collectOrderData(targetStatus, paidState);
     const res = await fetch('/api/update-order', {
       method: 'POST',
@@ -338,13 +339,21 @@ export default function OrderPage() {
     await loadFlatNames();
     await loadLinkedBillNumber(result.billFileName || billFileName || '');
     router.replace({ pathname: '/order', query: { fileName: result.fileName } }, undefined, { shallow: true });
-    alert(message || (targetStatus === 'delivered' ? 'Order marked as delivered. Linked bill updated.' : 'Order draft saved. Linked draft bill created/updated.'));
+    const successMessage = message || (targetStatus === 'delivered' ? 'Order marked as delivered. Linked bill updated.' : 'Order draft saved. Linked draft bill created/updated.');
+    if (useInfoModal) {
+      setInfoDialog({
+        title: targetStatus === 'draft' ? 'Draft Saved' : 'Saved',
+        message: successMessage
+      });
+    } else {
+      alert(successMessage);
+    }
     return true;
   }
 
   async function saveDraft() {
     if (!validateRequired()) return;
-    await persistOrder('draft', paid, 'Order draft saved. Linked draft bill created/updated.');
+    await persistOrder('draft', paid, 'Order draft saved. Linked draft bill created/updated.', { useInfoModal: true });
   }
 
   function closeConfirm() {
@@ -436,6 +445,16 @@ export default function OrderPage() {
         busy={confirmBusy}
         onCancel={closeConfirm}
         onConfirm={runConfirmedAction}
+      />
+
+      <ConfirmModal
+        open={Boolean(infoDialog)}
+        title={infoDialog?.title}
+        message={infoDialog?.message}
+        confirmLabel='OK'
+        showCancel={false}
+        onCancel={() => setInfoDialog(null)}
+        onConfirm={() => setInfoDialog(null)}
       />
 
       <div className='page'>

@@ -8,6 +8,7 @@ export default function ConfirmModal({
   cancelLabel = 'Cancel',
   danger = false,
   busy = false,
+  showCancel = true,
   onConfirm,
   onCancel
 }) {
@@ -34,9 +35,11 @@ export default function ConfirmModal({
         <h2 id='ll-confirm-title'>{title}</h2>
         <p>{message}</p>
         <div className='ll-confirm-actions'>
-          <button type='button' className='ll-confirm-btn secondary' onClick={onCancel} disabled={busy}>
-            {cancelLabel}
-          </button>
+          {showCancel ? (
+            <button type='button' className='ll-confirm-btn secondary' onClick={onCancel} disabled={busy}>
+              {cancelLabel}
+            </button>
+          ) : null}
           <button
             type='button'
             className={`ll-confirm-btn ${danger ? 'danger' : 'primary'}`}

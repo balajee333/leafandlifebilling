@@ -1,6 +1,7 @@
 import Head from 'next/head';
 import { Fragment, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/router';
+import OrderPreviewModal from '../components/OrderPreviewModal';
 import { openWhatsAppChat, toTelUrl, toWhatsAppUrl } from '../lib/whatsapp';
 
 function WhatsAppIconButton({ phone }) {
@@ -118,6 +119,7 @@ export default function Home() {
   const [collapsedFlats, setCollapsedFlats] = useState(() => new Set());
   const [searchQuery, setSearchQuery] = useState('');
   const [itemOrdersDialog, setItemOrdersDialog] = useState(null);
+  const [previewOrderFileName, setPreviewOrderFileName] = useState('');
 
   function flatGroupKey(sectionId, flatName) {
     return `${sectionId}::${flatName}`;
@@ -311,10 +313,19 @@ export default function Home() {
     window.location.href = `/order?fileName=${encodeURIComponent(fileName)}`;
   }
 
+  function openOrderPreview(fileName) {
+    if (!fileName) return;
+    setPreviewOrderFileName(fileName);
+  }
+
+  function closeOrderPreview() {
+    setPreviewOrderFileName('');
+  }
+
   function openItemOrders(item) {
     if (!item?.orders?.length) return;
     if (item.orders.length === 1) {
-      goToOrder(item.orders[0].fileName);
+      openOrderPreview(item.orders[0].fileName);
       return;
     }
     setItemOrdersDialog(item);
@@ -540,7 +551,13 @@ export default function Home() {
       </Head>
 
       {itemOrdersDialog ? (
-        <div className='ll-confirm-overlay' role='presentation' onClick={() => setItemOrdersDialog(null)}>
+        <div
+          className='ll-confirm-overlay'
+          role='presentation'
+          onClick={() => {
+            if (!previewOrderFileName) setItemOrdersDialog(null);
+          }}
+        >
           <div
             className='ll-confirm-modal ll-item-orders-modal'
             role='dialog'
@@ -549,14 +566,14 @@ export default function Home() {
             onClick={e => e.stopPropagation()}
           >
             <h2 id='ll-item-orders-title'>{itemOrdersDialog.product}</h2>
-            <p>Select an order to open.</p>
+            <p>Select an order to view.</p>
             <div className='ll-item-orders-list'>
               {itemOrdersDialog.orders.map(order => (
                 <button
                   key={order.fileName}
                   type='button'
                   className='ll-item-order-row'
-                  onClick={() => goToOrder(order.fileName)}
+                  onClick={() => openOrderPreview(order.fileName)}
                 >
                   <span className='ll-item-order-num'>#{order.orderNumber || '—'}</span>
                   <span className='ll-item-order-details'>
@@ -576,6 +593,14 @@ export default function Home() {
             </div>
           </div>
         </div>
+      ) : null}
+
+      {previewOrderFileName ? (
+        <OrderPreviewModal
+          fileName={previewOrderFileName}
+          onClose={closeOrderPreview}
+          onOpenOrder={goToOrder}
+        />
       ) : null}
 
       <div className='ll-page'>
