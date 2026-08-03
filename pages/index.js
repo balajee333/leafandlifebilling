@@ -111,9 +111,10 @@ export default function Home() {
   const router = useRouter();
   const [tab, setTab] = useState('orders');
   const [orders, setOrders] = useState([]);
-  const [drafts, setDrafts] = useState([]);
-  const [delivered, setDelivered] = useState([]);
+  const [pastOrders, setPastOrders] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [pastLoading, setPastLoading] = useState(false);
+  const [pastLoaded, setPastLoaded] = useState(false);
   const [collapsedFlats, setCollapsedFlats] = useState(() => new Set());
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -136,15 +137,19 @@ export default function Home() {
   }
 
   useEffect(() => {
-    loadAll();
+    loadActiveOrders();
   }, []);
 
   useEffect(() => {
     if (!router.isReady) return;
-    const q = router.query.tab;
-    const nextTab = q === 'past' ? 'past' : 'orders';
-    setTab(nextTab);
+    setTab(router.query.tab === 'past' ? 'past' : 'orders');
   }, [router.isReady, router.query.tab]);
+
+  useEffect(() => {
+    if (tab === 'past') {
+      loadPastOrders();
+    }
+  }, [tab]);
 
   function selectTab(nextTab) {
     setTab(nextTab);
@@ -155,29 +160,43 @@ export default function Home() {
     );
   }
 
-  async function loadAll() {
+  async function loadActiveOrders() {
     setLoading(true);
     try {
-      const [ordersRes, billsRes] = await Promise.all([
-        fetch('/api/orders'),
-        fetch('/api/bills')
-      ]);
+      const ordersRes = await fetch('/api/orders?scope=active');
       const ordersData = await ordersRes.json().catch(() => ({}));
-      const billsData = await billsRes.json().catch(() => ({}));
       if (!ordersRes.ok) throw new Error(ordersData.error || 'Unable to load orders.');
-      if (!billsRes.ok) throw new Error(billsData.error || 'Unable to load bills.');
 
       const orderList = Array.isArray(ordersData) ? ordersData : [];
       setOrders(orderList.slice().sort((a, b) => new Date(b.updatedAt || b.createdAt || 0) - new Date(a.updatedAt || a.createdAt || 0)));
-
-      const bills = Array.isArray(billsData) ? billsData : [];
-      const sorted = bills.slice().sort((a, b) => new Date(b.updatedAt || b.createdAt || 0) - new Date(a.updatedAt || a.createdAt || 0));
-      setDrafts(sorted.filter(bill => bill.status === 'draft'));
-      setDelivered(sorted.filter(bill => bill.status === 'delivered'));
     } catch (error) {
       alert(error.message || 'Unable to load data.');
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function loadPastOrders() {
+    if (pastLoading) return;
+    setPastLoading(true);
+    try {
+      const ordersRes = await fetch('/api/orders?scope=past');
+      const ordersData = await ordersRes.json().catch(() => ({}));
+      if (!ordersRes.ok) throw new Error(ordersData.error || 'Unable to load past orders.');
+
+      const orderList = Array.isArray(ordersData) ? ordersData : [];
+      setPastOrders(
+        orderList.slice().sort((a, b) => {
+          const aTime = new Date(a.deliveredAt || a.updatedAt || a.createdAt || 0).getTime();
+          const bTime = new Date(b.deliveredAt || b.updatedAt || b.createdAt || 0).getTime();
+          return bTime - aTime;
+        })
+      );
+      setPastLoaded(true);
+    } catch (error) {
+      alert(error.message || 'Unable to load past orders.');
+    } finally {
+      setPastLoading(false);
     }
   }
 
@@ -209,43 +228,9 @@ export default function Home() {
   );
 
   const deliveredPaidOrders = useMemo(
-    () => orders
-      .filter(order => order.status === 'delivered' && order.paid && matchesSearch(order, { numberKey: 'orderNumber' }))
-      .slice()
-      .sort((a, b) => {
-        const aTime = new Date(a.deliveredAt || a.updatedAt || a.createdAt || 0).getTime();
-        const bTime = new Date(b.deliveredAt || b.updatedAt || b.createdAt || 0).getTime();
-        return bTime - aTime;
-      }),
-    [orders, searchQuery]
+    () => pastOrders.filter(order => matchesSearch(order, { numberKey: 'orderNumber' })),
+    [pastOrders, searchQuery]
   );
-
-  const allBills = useMemo(
-    () => [...drafts, ...delivered].sort(
-      (a, b) => new Date(b.updatedAt || b.createdAt || 0) - new Date(a.updatedAt || a.createdAt || 0)
-    ),
-    [drafts, delivered]
-  );
-
-  const notDeliveredBills = useMemo(
-    () => allBills.filter(bill => bill.status !== 'delivered' && matchesSearch(bill, { numberKey: 'billNumber' })),
-    [allBills, searchQuery]
-  );
-
-  const deliveredUnpaidBills = useMemo(
-    () => allBills.filter(bill => bill.status === 'delivered' && !bill.paid && matchesSearch(bill, { numberKey: 'billNumber' })),
-    [allBills, searchQuery]
-  );
-
-  const deliveredPaidBills = useMemo(
-    () => allBills.filter(bill => bill.status === 'delivered' && bill.paid && matchesSearch(bill, { numberKey: 'billNumber' })),
-    [allBills, searchQuery]
-  );
-
-  function billTotalQty(bill) {
-    if (!Array.isArray(bill.items)) return 0;
-    return bill.items.reduce((sum, item) => sum + Number(item.qty || 0), 0);
-  }
 
   function groupByFlatName(list, { sortBy = 'updated' } = {}) {
     const groups = new Map();
@@ -279,8 +264,8 @@ export default function Home() {
       });
   }
 
-  function renderOrdersTable(list, emptyMessage, { showPaid = false, sectionId = 'orders', sortBy = 'updated' } = {}) {
-    if (loading) {
+  function renderOrdersTable(list, emptyMessage, { showPaid = false, sectionId = 'orders', sortBy = 'updated', isLoading = loading } = {}) {
+    if (isLoading) {
       return <p className='ll-empty'>Loading orders…</p>;
     }
     if (list.length === 0) {
@@ -397,116 +382,6 @@ export default function Home() {
     );
   }
 
-  function renderBillsTable(list, emptyMessage, { showPaid = false, sectionId = 'bills' } = {}) {
-    if (loading) {
-      return <p className='ll-empty'>Loading bills…</p>;
-    }
-    if (list.length === 0) {
-      return <p className='ll-empty'>{emptyMessage}</p>;
-    }
-
-    const colSpan = showPaid ? 7 : 6;
-    const groups = groupByFlatName(list);
-    return (
-      <>
-        <div className='ll-table-scroll ll-desktop-only'>
-          <table className='ll-table'>
-            <thead>
-              <tr>
-                <th className='col-num'>Bill #</th>
-                <th className='col-customer'>Customer</th>
-                <th className='col-flatno'>Flat #</th>
-                <th className='col-date'>Date</th>
-                <th className='col-qty'>Qty</th>
-                <th className='col-total'>Total</th>
-                {showPaid && <th className='col-paid'>Paid</th>}
-              </tr>
-            </thead>
-            <tbody>
-              {groups.map(group => {
-                const open = isFlatOpen(sectionId, group.flatName);
-                return (
-                  <Fragment key={group.flatName}>
-                    <tr className={`ll-flat-row ${open ? 'is-open' : 'is-collapsed'}`}>
-                      <td colSpan={colSpan}>
-                        <button
-                          type='button'
-                          className='ll-flat-toggle'
-                          aria-expanded={open}
-                          onClick={() => toggleFlat(sectionId, group.flatName)}
-                        >
-                          <FlatToggleLabel flatName={group.flatName} count={group.items.length} open={open} />
-                        </button>
-                      </td>
-                    </tr>
-                    {open && group.items.map(bill => (
-                      <tr
-                        key={bill.fileName}
-                        className='ll-data-row'
-                        onClick={() => { window.location.href = `/bill?fileName=${encodeURIComponent(bill.fileName)}`; }}
-                      >
-                        <td className='col-num'>
-                          <span className='ll-number-text'>{bill.billNumber || '—'}</span>
-                        </td>
-                        <td className='col-customer'>{bill.customerName || '—'}</td>
-                        <td className='col-flatno'>{bill.flatNumber || '—'}</td>
-                        <td className='col-date'>{bill.date || '—'}</td>
-                        <td className='col-qty'>{billTotalQty(bill)}</td>
-                        <td className='col-total'>₹ {Number(bill.total || 0).toFixed(2)}</td>
-                        {showPaid && (
-                          <td className='col-paid'>
-                            <PaidBadge paid={bill.paid} />
-                          </td>
-                        )}
-                      </tr>
-                    ))}
-                  </Fragment>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-
-        <div className='ll-mobile-list ll-mobile-only'>
-          {groups.map(group => {
-            const open = isFlatOpen(sectionId, group.flatName);
-            return (
-              <div className={`ll-mobile-group ${open ? 'is-open' : 'is-collapsed'}`} key={group.flatName}>
-                <button
-                  type='button'
-                  className='ll-mobile-group-title'
-                  aria-expanded={open}
-                  onClick={() => toggleFlat(sectionId, group.flatName)}
-                >
-                  <FlatToggleLabel flatName={group.flatName} count={group.items.length} open={open} />
-                </button>
-                {open && (
-                  <div className='ll-mobile-cards'>
-                    {group.items.map(bill => (
-                      <MobileListCard
-                        key={bill.fileName}
-                        href={`/bill?fileName=${encodeURIComponent(bill.fileName)}`}
-                        numberLabel={`#${bill.billNumber || '—'}`}
-                        name={bill.customerName || '—'}
-                        meta={[
-                          `Flat ${bill.flatNumber || '—'}`,
-                          bill.date || '—',
-                          `Qty ${billTotalQty(bill)}`
-                        ]}
-                        total={`₹ ${Number(bill.total || 0).toFixed(2)}`}
-                        paidBadge={showPaid ? <PaidBadge paid={bill.paid} /> : null}
-                      />
-                    ))}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      </>
-    );
-  }
-
   return (
     <>
       <Head>
@@ -564,8 +439,12 @@ export default function Home() {
         ) : (
           <div className='ll-grid'>
             <section className='ll-panel'>
-              <h2>Past Orders <span className='ll-section-count'>({deliveredPaidOrders.length})</span></h2>
-              {renderOrdersTable(deliveredPaidOrders, 'No past orders yet.', { sectionId: 'orders-past', sortBy: 'delivered' })}
+              <h2>Past Orders <span className='ll-section-count'>({pastLoading && !pastLoaded ? '…' : deliveredPaidOrders.length})</span></h2>
+              {renderOrdersTable(deliveredPaidOrders, 'No past orders yet.', {
+                sectionId: 'orders-past',
+                sortBy: 'delivered',
+                isLoading: pastLoading && !pastLoaded
+              })}
             </section>
           </div>
         )}

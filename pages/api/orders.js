@@ -6,7 +6,9 @@ export default async function handler(req, res) {
     return;
   }
   try {
-    const orders = await listOrders();
+    const scopeRaw = String(req.query.scope || 'all').toLowerCase();
+    const scope = ['active', 'past', 'all'].includes(scopeRaw) ? scopeRaw : 'all';
+    const orders = await listOrders({ scope });
     res.status(200).json(orders);
   } catch (error) {
     res.status(500).json({ error: error.message });
