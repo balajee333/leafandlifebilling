@@ -117,6 +117,7 @@ export default function Home() {
   const [pastLoaded, setPastLoaded] = useState(false);
   const [collapsedFlats, setCollapsedFlats] = useState(() => new Set());
   const [searchQuery, setSearchQuery] = useState('');
+  const [itemOrdersDialog, setItemOrdersDialog] = useState(null);
 
   function flatGroupKey(sectionId, flatName) {
     return `${sectionId}::${flatName}`;
@@ -245,9 +246,34 @@ export default function Home() {
         const existing = totals.get(key);
         if (existing) {
           existing.qty += qty;
-          existing.orders.add(order.fileName);
+          const orderEntry = existing.ordersByFile.get(order.fileName);
+          if (orderEntry) {
+            orderEntry.qty += qty;
+          } else {
+            existing.ordersByFile.set(order.fileName, {
+              fileName: order.fileName,
+              orderNumber: order.orderNumber,
+              customerName: order.customerName,
+              flatName: order.flatName,
+              flatNumber: order.flatNumber,
+              qty
+            });
+          }
         } else {
-          totals.set(key, { product, qty, orders: new Set([order.fileName]) });
+          totals.set(key, {
+            product,
+            qty,
+            ordersByFile: new Map([
+              [order.fileName, {
+                fileName: order.fileName,
+                orderNumber: order.orderNumber,
+                customerName: order.customerName,
+                flatName: order.flatName,
+                flatNumber: order.flatNumber,
+                qty
+              }]
+            ])
+          });
         }
       }
     }
@@ -257,7 +283,12 @@ export default function Home() {
       .map(row => ({
         product: row.product,
         qty: row.qty,
-        orderCount: row.orders.size
+        orderCount: row.ordersByFile.size,
+        orders: Array.from(row.ordersByFile.values()).sort((a, b) => {
+          const aNum = Number(String(a.orderNumber || '').replace(/\D/g, '')) || 0;
+          const bNum = Number(String(b.orderNumber || '').replace(/\D/g, '')) || 0;
+          return bNum - aNum;
+        })
       }))
       .filter(row => !q || row.product.toLowerCase().includes(q))
       .sort((a, b) => a.product.localeCompare(b.product, undefined, { sensitivity: 'base' }));
@@ -267,6 +298,20 @@ export default function Home() {
     () => itemsToDeliver.reduce((sum, item) => sum + Number(item.qty || 0), 0),
     [itemsToDeliver]
   );
+
+  function goToOrder(fileName) {
+    if (!fileName) return;
+    window.location.href = `/order?fileName=${encodeURIComponent(fileName)}`;
+  }
+
+  function openItemOrders(item) {
+    if (!item?.orders?.length) return;
+    if (item.orders.length === 1) {
+      goToOrder(item.orders[0].fileName);
+      return;
+    }
+    setItemOrdersDialog(item);
+  }
 
   function groupByFlatName(list, { sortBy = 'updated' } = {}) {
     const groups = new Map();
@@ -439,7 +484,20 @@ export default function Home() {
             </thead>
             <tbody>
               {itemsToDeliver.map(item => (
-                <tr key={item.product} className='ll-data-row ll-data-row-static'>
+                <tr
+                  key={item.product}
+                  className='ll-data-row'
+                  onClick={() => openItemOrders(item)}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      openItemOrders(item);
+                    }
+                  }}
+                  tabIndex={0}
+                  role='link'
+                  aria-label={`${item.product}, ${item.qty} to deliver across ${item.orderCount} orders`}
+                >
                   <td className='col-item'>{item.product}</td>
                   <td className='col-qty'><strong>{item.qty}</strong></td>
                   <td className='col-orders'>{item.orderCount}</td>
@@ -452,13 +510,18 @@ export default function Home() {
         <div className='ll-mobile-list ll-mobile-only'>
           <div className='ll-mobile-cards ll-items-cards'>
             {itemsToDeliver.map(item => (
-              <article key={item.product} className='ll-mobile-card ll-item-card'>
+              <button
+                key={item.product}
+                type='button'
+                className='ll-mobile-card ll-item-card'
+                onClick={() => openItemOrders(item)}
+              >
                 <div className='ll-item-card-name'>{item.product}</div>
                 <div className='ll-item-card-meta'>
                   <span><strong>{item.qty}</strong> to deliver</span>
                   <span>{item.orderCount} order{item.orderCount === 1 ? '' : 's'}</span>
                 </div>
-              </article>
+              </button>
             ))}
           </div>
         </div>
@@ -471,6 +534,45 @@ export default function Home() {
       <Head>
         <title>Leaf & Life</title>
       </Head>
+
+      {itemOrdersDialog ? (
+        <div className='ll-confirm-overlay' role='presentation' onClick={() => setItemOrdersDialog(null)}>
+          <div
+            className='ll-confirm-modal ll-item-orders-modal'
+            role='dialog'
+            aria-modal='true'
+            aria-labelledby='ll-item-orders-title'
+            onClick={e => e.stopPropagation()}
+          >
+            <h2 id='ll-item-orders-title'>{itemOrdersDialog.product}</h2>
+            <p>Select an order to open.</p>
+            <div className='ll-item-orders-list'>
+              {itemOrdersDialog.orders.map(order => (
+                <button
+                  key={order.fileName}
+                  type='button'
+                  className='ll-item-order-row'
+                  onClick={() => goToOrder(order.fileName)}
+                >
+                  <span className='ll-item-order-num'>#{order.orderNumber || '—'}</span>
+                  <span className='ll-item-order-details'>
+                    <strong>{order.customerName || '—'}</strong>
+                    <span>
+                      {[order.flatName, order.flatNumber].filter(Boolean).join(' · ') || 'No flat'}
+                    </span>
+                  </span>
+                  <span className='ll-item-order-qty'>Qty {order.qty}</span>
+                </button>
+              ))}
+            </div>
+            <div className='ll-confirm-actions'>
+              <button type='button' className='ll-confirm-btn secondary' onClick={() => setItemOrdersDialog(null)}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       <div className='ll-page'>
         <header className='ll-header'>
