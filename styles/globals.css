@@ -312,7 +312,7 @@ a.ll-btn.secondary {
 .ll-table .col-status { width: 12%; }
 .ll-table .col-paid { width: 12%; }
 .ll-table .col-action { width: 14%; }
-.ll-table .col-item { width: 64%; }
+.ll-table .col-item { width: 80%; }
 .ll-table .col-orders { width: 16%; }
 
 .ll-data-row-static {

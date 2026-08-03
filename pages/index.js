@@ -294,10 +294,17 @@ export default function Home() {
       .sort((a, b) => a.product.localeCompare(b.product, undefined, { sensitivity: 'base' }));
   }, [orders, searchQuery]);
 
-  const itemsToDeliverTotalQty = useMemo(
-    () => itemsToDeliver.reduce((sum, item) => sum + Number(item.qty || 0), 0),
-    [itemsToDeliver]
-  );
+  const itemsToDeliverTotalQty = useMemo(() => {
+    let total = 0;
+    for (const order of orders) {
+      if (order.status === 'delivered') continue;
+      for (const item of order.items || []) {
+        if (!String(item.product || '').trim()) continue;
+        total += Number(item.qty || 0);
+      }
+    }
+    return total;
+  }, [orders]);
 
   function goToOrder(fileName) {
     if (!fileName) return;
@@ -479,7 +486,6 @@ export default function Home() {
               <tr>
                 <th className='col-item'>Item</th>
                 <th className='col-qty'>Qty</th>
-                <th className='col-orders'>Orders</th>
               </tr>
             </thead>
             <tbody>
@@ -496,11 +502,10 @@ export default function Home() {
                   }}
                   tabIndex={0}
                   role='link'
-                  aria-label={`${item.product}, ${item.qty} to deliver across ${item.orderCount} orders`}
+                  aria-label={`${item.product}, ${item.qty} to deliver`}
                 >
                   <td className='col-item'>{item.product}</td>
                   <td className='col-qty'><strong>{item.qty}</strong></td>
-                  <td className='col-orders'>{item.orderCount}</td>
                 </tr>
               ))}
             </tbody>
@@ -519,7 +524,6 @@ export default function Home() {
                 <div className='ll-item-card-name'>{item.product}</div>
                 <div className='ll-item-card-meta'>
                   <span><strong>{item.qty}</strong> to deliver</span>
-                  <span>{item.orderCount} order{item.orderCount === 1 ? '' : 's'}</span>
                 </div>
               </button>
             ))}
@@ -608,7 +612,9 @@ export default function Home() {
 
         <div className='ll-tabs'>
           <button type='button' className={tab === 'orders' ? 'll-tab active' : 'll-tab'} onClick={() => selectTab('orders')}>Orders</button>
-          <button type='button' className={tab === 'items' ? 'll-tab active' : 'll-tab'} onClick={() => selectTab('items')}>Items to Deliver</button>
+          <button type='button' className={tab === 'items' ? 'll-tab active' : 'll-tab'} onClick={() => selectTab('items')}>
+            Items to Deliver{loading ? '' : ` (${itemsToDeliverTotalQty})`}
+          </button>
           <button type='button' className={tab === 'past' ? 'll-tab active' : 'll-tab'} onClick={() => selectTab('past')}>Past Orders</button>
         </div>
 
@@ -626,12 +632,7 @@ export default function Home() {
         ) : tab === 'items' ? (
           <div className='ll-grid'>
             <section className='ll-panel'>
-              <h2>
-                Items to be delivered
-                <span className='ll-section-count'>
-                  ({loading ? '…' : `${itemsToDeliver.length} items · ${itemsToDeliverTotalQty} qty`})
-                </span>
-              </h2>
+              <h2>Items to be delivered</h2>
               {renderItemsToDeliver()}
             </section>
           </div>
