@@ -1,5 +1,5 @@
 import Head from 'next/head';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/router';
 import ConfirmModal from '../components/ConfirmModal';
 import { billPdfBaseName, printWithPdfTitle } from '../lib/print-pdf';
@@ -7,6 +7,25 @@ import { openWhatsAppChat, toTelUrl, toWhatsAppUrl } from '../lib/whatsapp';
 
 const today = new Date().toISOString().slice(0, 10);
 const emptyItem = { product: '', qty: 1, price: '' };
+
+function isRealItem(item) {
+  return Boolean(String(item?.product || '').trim());
+}
+
+function sortItemsPendingFirst(list = []) {
+  const pending = [];
+  const delivered = [];
+  for (const item of list) {
+    if (item?.delivered) delivered.push(item);
+    else pending.push(item);
+  }
+  return [...pending, ...delivered];
+}
+
+function stripReady(item = {}) {
+  const { ready, ...rest } = item;
+  return rest;
+}
 
 function IconBtn({ href, onClick, label, disabled, danger, primary, children }) {
   const className = [
@@ -105,6 +124,7 @@ export default function OrderPage() {
   const [currentFileName, setCurrentFileName] = useState('');
   const [orderNumber, setOrderNumber] = useState('---');
   const [billFileName, setBillFileName] = useState('');
+  const [deliveryBillFileNames, setDeliveryBillFileNames] = useState([]);
   const [billNumber, setBillNumber] = useState('---');
   const [status, setStatus] = useState('draft');
   const [paid, setPaid] = useState(false);
@@ -122,6 +142,13 @@ export default function OrderPage() {
   const skipResetRef = useRef(false);
 
   const total = useMemo(() => items.reduce((sum, item) => sum + Number(item.qty || 0) * Number(item.price || 0), 0), [items]);
+  const displayRows = useMemo(
+    () => items
+      .map((item, index) => ({ item, index }))
+      .sort((a, b) => Number(!!a.item.delivered) - Number(!!b.item.delivered)),
+    [items]
+  );
+  const hasDeliveredItems = useMemo(() => items.some(item => item.delivered), [items]);
   const isDelivered = status === 'delivered';
   const canCreateAnother = Boolean(currentFileName);
   const whatsappUrl = toWhatsAppUrl(customerPhone);
@@ -165,6 +192,7 @@ export default function OrderPage() {
     setCurrentFileName('');
     setOrderNumber('---');
     setBillFileName('');
+    setDeliveryBillFileNames([]);
     setBillNumber('---');
     setStatus('draft');
     setPaid(false);
@@ -203,6 +231,7 @@ export default function OrderPage() {
       setCurrentFileName(name);
       setOrderNumber(data.orderNumber || '---');
       setBillFileName(data.billFileName || '');
+      setDeliveryBillFileNames(Array.isArray(data.deliveryBillFileNames) ? data.deliveryBillFileNames : []);
       setStatus(data.status || 'draft');
       setPaid(data.paid ?? false);
       setCustomerName(data.customerName || '');
@@ -210,7 +239,11 @@ export default function OrderPage() {
       setFlatNumber(data.flatNumber || '');
       setCustomerPhone(data.customerPhone || '');
       setDate(data.date || today);
-      setItems(Array.isArray(data.items) && data.items.length ? data.items : [emptyItem]);
+      setItems(
+        Array.isArray(data.items) && data.items.length
+          ? sortItemsPendingFirst(data.items.map(item => ({ ...item, ready: false })))
+          : [emptyItem]
+      );
       await loadLinkedBillNumber(data.billFileName || '');
     } catch (error) {
       alert('Could not load order.');
@@ -232,6 +265,7 @@ export default function OrderPage() {
       setCurrentFileName('');
       setOrderNumber('---');
       setBillFileName('');
+      setDeliveryBillFileNames([]);
       setBillNumber('---');
       setStatus('draft');
       setPaid(false);
@@ -266,42 +300,71 @@ export default function OrderPage() {
 
   function updateItem(index, field, value) {
     setItems(current => current.map((item, idx) => {
-      if (idx !== index) return item;
+      if (idx !== index || item.delivered || isDelivered) return item;
       if (field === 'product') return { ...item, product: value };
       if (value === '' || value === null) return { ...item, [field]: '' };
       return { ...item, [field]: Number(value) };
     }));
   }
 
-  function addItem() {
-    setItems(current => [...current, emptyItem]);
+  function toggleReady(index) {
+    if (isDelivered) return;
+    setItems(current => current.map((item, idx) => {
+      if (idx !== index || item.delivered) return item;
+      return { ...item, ready: !item.ready };
+    }));
   }
 
-  function removeItem(index) {
-    if (!confirm('Remove this item from the order?')) return;
+  function addItem() {
+    if (isDelivered) return;
     setItems(current => {
-      const next = current.filter((_, idx) => idx !== index);
-      return next.length ? next : [emptyItem];
+      const pending = current.filter(item => !item.delivered);
+      const delivered = current.filter(item => item.delivered);
+      return [...pending, emptyItem, ...delivered];
     });
   }
 
-  function collectOrderData(targetStatus, paidState = paid) {
+  function removeItem(index) {
+    if (isDelivered) return;
+    const target = items[index];
+    if (target?.delivered) return;
+    if (!confirm('Remove this item from the order?')) return;
+    setItems(current => {
+      const next = current.filter((_, idx) => idx !== index);
+      return next.length ? sortItemsPendingFirst(next) : [emptyItem];
+    });
+  }
+
+  function collectOrderData(targetStatus, paidState = paid, itemsSource = items) {
+    const normalizedItems = itemsSource.map(item => {
+      const base = {
+        product: String(item.product || '').trim(),
+        qty: Number(item.qty || 0),
+        price: Number(item.price || 0),
+        total: Number(item.qty || 0) * Number(item.price || 0)
+      };
+      if (item.delivered) {
+        return {
+          ...base,
+          delivered: true,
+          ...(item.deliveredAt ? { deliveredAt: item.deliveredAt } : {})
+        };
+      }
+      return base;
+    });
+    const orderTotal = normalizedItems.reduce((sum, item) => sum + Number(item.total || 0), 0);
     return {
       fileName: currentFileName || null,
       orderNumber: orderNumber === '---' ? null : orderNumber,
       billFileName: billFileName || null,
+      deliveryBillFileNames,
       customerName: customerName.trim(),
       flatName: flatName.trim(),
       flatNumber: flatNumber.trim(),
       customerPhone: customerPhone.trim(),
       date,
-      items: items.map(item => ({
-        product: item.product.trim(),
-        qty: Number(item.qty || 0),
-        price: Number(item.price || 0),
-        total: Number(item.qty || 0) * Number(item.price || 0)
-      })),
-      total,
+      items: normalizedItems,
+      total: orderTotal,
       status: targetStatus,
       paid: paidState
     };
@@ -319,8 +382,23 @@ export default function OrderPage() {
     return true;
   }
 
-  async function persistOrder(targetStatus, paidState = paid, message, { useInfoModal = false } = {}) {
-    const payload = collectOrderData(targetStatus, paidState);
+  async function persistOrder(targetStatus, paidState = paid, message, {
+    useInfoModal = false,
+    itemsOverride = null,
+    partialDeliveryBatch = null,
+    infoTitle = null
+  } = {}) {
+    const payload = collectOrderData(targetStatus, paidState, itemsOverride || items);
+    if (partialDeliveryBatch?.length) {
+      payload.partialDeliveryBatch = partialDeliveryBatch.map(item => ({
+        product: String(item.product || '').trim(),
+        qty: Number(item.qty || 0),
+        price: Number(item.price || 0),
+        total: Number(item.total) || Number(item.qty || 0) * Number(item.price || 0),
+        delivered: true,
+        ...(item.deliveredAt ? { deliveredAt: item.deliveredAt } : {})
+      }));
+    }
     const res = await fetch('/api/update-order', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -334,15 +412,21 @@ export default function OrderPage() {
     setCurrentFileName(result.fileName);
     setOrderNumber(result.orderNumber || orderNumber);
     setBillFileName(result.billFileName || billFileName);
+    setDeliveryBillFileNames(Array.isArray(result.deliveryBillFileNames) ? result.deliveryBillFileNames : deliveryBillFileNames);
     setStatus(result.status || targetStatus);
     setPaid(result.paid ?? paidState);
+    if (Array.isArray(result.items) && result.items.length) {
+      setItems(sortItemsPendingFirst(result.items.map(item => ({ ...stripReady(item), ready: false }))));
+    } else if (itemsOverride) {
+      setItems(sortItemsPendingFirst(itemsOverride.map(item => ({ ...stripReady(item), ready: false }))));
+    }
     await loadFlatNames();
     await loadLinkedBillNumber(result.billFileName || billFileName || '');
     router.replace({ pathname: '/order', query: { fileName: result.fileName } }, undefined, { shallow: true });
     const successMessage = message || (targetStatus === 'delivered' ? 'Order marked as delivered. Linked bill updated.' : 'Order draft saved. Linked draft bill created/updated.');
     if (useInfoModal) {
       setInfoDialog({
-        title: targetStatus === 'draft' ? 'Draft Saved' : 'Saved',
+        title: infoTitle || (targetStatus === 'delivered' ? 'Order Delivered' : targetStatus === 'draft' && partialDeliveryBatch?.length ? 'Partial Delivery Saved' : 'Draft Saved'),
         message: successMessage
       });
     } else {
@@ -374,11 +458,76 @@ export default function OrderPage() {
 
   function markDelivered() {
     if (!validateRequired()) return;
+    const pending = items.filter(item => !item.delivered && isRealItem(item));
+    const readyPending = pending.filter(item => item.ready);
+    if (!readyPending.length) {
+      setInfoDialog({
+        title: 'Select Items',
+        message: 'Select at least one item to deliver.'
+      });
+      return;
+    }
+
+    const isFull = readyPending.length === pending.length;
+    const deliveredAt = new Date().toISOString();
+    const newlyDelivered = [];
+    const nextItems = items.map(item => {
+      if (item.delivered) {
+        return {
+          product: String(item.product || '').trim(),
+          qty: Number(item.qty || 0),
+          price: Number(item.price || 0),
+          total: Number(item.qty || 0) * Number(item.price || 0),
+          delivered: true,
+          ...(item.deliveredAt ? { deliveredAt: item.deliveredAt } : {})
+        };
+      }
+      if (item.ready && isRealItem(item)) {
+        const deliveredItem = {
+          product: String(item.product || '').trim(),
+          qty: Number(item.qty || 0),
+          price: Number(item.price || 0),
+          total: Number(item.qty || 0) * Number(item.price || 0),
+          delivered: true,
+          deliveredAt
+        };
+        newlyDelivered.push(deliveredItem);
+        return deliveredItem;
+      }
+      return {
+        product: String(item.product || '').trim(),
+        qty: Number(item.qty || 0),
+        price: Number(item.price || 0),
+        total: Number(item.qty || 0) * Number(item.price || 0)
+      };
+    });
+    const sortedItems = sortItemsPendingFirst(nextItems);
+
+    if (isFull) {
+      setConfirmDialog({
+        title: 'Mark as Delivered',
+        message: 'Mark this order as delivered?\n\nThe linked bill will also be marked as delivered.',
+        confirmLabel: 'Mark Delivered',
+        run: () => persistOrder('delivered', paid, 'Order marked as delivered. Linked bill updated.', {
+          useInfoModal: true,
+          infoTitle: 'Order Delivered',
+          itemsOverride: sortedItems,
+          partialDeliveryBatch: newlyDelivered
+        })
+      });
+      return;
+    }
+
     setConfirmDialog({
-      title: 'Mark as Delivered',
-      message: 'Mark this order as delivered?\n\nThe linked bill will also be marked as delivered.',
-      confirmLabel: 'Mark Delivered',
-      run: () => persistOrder('delivered', paid, 'Order marked as delivered. Linked bill updated.')
+      title: 'Partial Delivery',
+      message: `Deliver ${readyPending.length} of ${pending.length} items?\n\nA delivered bill will be created for the selected items.`,
+      confirmLabel: 'Deliver Selected',
+      run: () => persistOrder('draft', paid, 'Partial delivery saved. Delivered bill created; remaining items kept on a new draft bill.', {
+        useInfoModal: true,
+        infoTitle: 'Partial Delivery Saved',
+        itemsOverride: sortedItems,
+        partialDeliveryBatch: newlyDelivered
+      })
     });
   }
 
@@ -387,7 +536,15 @@ export default function OrderPage() {
     if (!confirm('Move this order back to draft?\n\nThe linked bill will also return to draft so you can edit again.')) return;
     setLoading(true);
     try {
-      await persistOrder('draft', paid, 'Order moved back to draft. Linked bill updated.');
+      const clearedItems = items.map(item => ({
+        product: String(item.product || '').trim(),
+        qty: Number(item.qty || 0),
+        price: Number(item.price || 0),
+        total: Number(item.qty || 0) * Number(item.price || 0)
+      }));
+      await persistOrder('draft', paid, 'Order moved back to draft. Linked bill updated.', {
+        itemsOverride: clearedItems.length ? clearedItems : [emptyItem]
+      });
     } finally {
       setLoading(false);
     }
@@ -556,34 +713,71 @@ export default function OrderPage() {
             <div className='table-shell'>
               <table>
                 <thead>
-                  <tr><th>Product</th><th>Qty</th><th>Price</th><th>Total</th><th></th></tr>
+                  <tr>
+                    {!isDelivered && <th className='col-ready'>Ready</th>}
+                    <th>Product</th>
+                    <th>Qty</th>
+                    <th>Price</th>
+                    <th>Total</th>
+                    <th></th>
+                  </tr>
                 </thead>
                 <tbody>
-                  {items.map((item, index) => (
-                    <tr key={index}>
-                      <td>
-                        <span className='item-line-label'>Product</span>
-                        <input value={item.product} disabled={isDelivered} onChange={e => updateItem(index, 'product', e.target.value)} placeholder='Product' />
-                      </td>
-                      <td>
-                        <span className='item-line-label'>Qty</span>
-                        <input type='number' min='0' value={item.qty} disabled={isDelivered} onChange={e => updateItem(index, 'qty', e.target.value)} />
-                      </td>
-                      <td>
-                        <span className='item-line-label'>Price</span>
-                        <input type='number' step='0.01' min='0' value={item.price === '' || item.price == null ? '' : item.price} disabled={isDelivered} onChange={e => updateItem(index, 'price', e.target.value)} />
-                      </td>
-                      <td>
-                        <span className='item-line-label'>Total</span>
-                        ₹ {(Number(item.qty || 0) * Number(item.price || 0)).toFixed(2)}
-                      </td>
-                      <td>
-                        <IconBtn danger disabled={isDelivered} onClick={() => removeItem(index)} label='Remove item'>
-                          {icons.trash}
-                        </IconBtn>
-                      </td>
-                    </tr>
-                  ))}
+                  {displayRows.map(({ item, index }, rowIndex) => {
+                    const rowLocked = isDelivered || Boolean(item.delivered);
+                    const showDeliveredDivider = hasDeliveredItems
+                      && item.delivered
+                      && (rowIndex === 0 || !displayRows[rowIndex - 1].item.delivered);
+                    return (
+                      <Fragment key={`${index}-${item.delivered ? 'd' : 'p'}-${item.product || 'item'}`}>
+                        {showDeliveredDivider && (
+                          <tr className='delivered-section-row'>
+                            <td colSpan={isDelivered ? 5 : 6}>Delivered</td>
+                          </tr>
+                        )}
+                        <tr className={item.delivered ? 'item-row-delivered' : undefined}>
+                          {!isDelivered && (
+                            <td className='col-ready'>
+                              <span className='item-line-label'>Ready</span>
+                              {item.delivered ? (
+                                <span className='ready-done' aria-label='Delivered'>✓</span>
+                              ) : (
+                                <input
+                                  type='checkbox'
+                                  className='ready-check'
+                                  checked={Boolean(item.ready)}
+                                  onChange={() => toggleReady(index)}
+                                  disabled={loading}
+                                  aria-label={`Mark ${item.product || 'item'} ready for delivery`}
+                                />
+                              )}
+                            </td>
+                          )}
+                          <td>
+                            <span className='item-line-label'>Product</span>
+                            <input value={item.product} disabled={rowLocked} onChange={e => updateItem(index, 'product', e.target.value)} placeholder='Product' />
+                          </td>
+                          <td>
+                            <span className='item-line-label'>Qty</span>
+                            <input type='number' min='0' value={item.qty} disabled={rowLocked} onChange={e => updateItem(index, 'qty', e.target.value)} />
+                          </td>
+                          <td>
+                            <span className='item-line-label'>Price</span>
+                            <input type='number' step='0.01' min='0' value={item.price === '' || item.price == null ? '' : item.price} disabled={rowLocked} onChange={e => updateItem(index, 'price', e.target.value)} />
+                          </td>
+                          <td>
+                            <span className='item-line-label'>Total</span>
+                            ₹ {(Number(item.qty || 0) * Number(item.price || 0)).toFixed(2)}
+                          </td>
+                          <td>
+                            <IconBtn danger disabled={rowLocked} onClick={() => removeItem(index)} label='Remove item'>
+                              {icons.trash}
+                            </IconBtn>
+                          </td>
+                        </tr>
+                      </Fragment>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -697,6 +891,12 @@ export default function OrderPage() {
         input{width:100%;padding:11px 12px;border:1px solid #dbe7de;border-radius:10px;background:#fcfdfc;box-sizing:border-box;font-size:16px;font-family:inherit;max-width:100%}
         input:focus{outline:none;border-color:#2e7d32}
         .table-shell{border:1px solid #e8efe9;border-radius:14px;overflow:hidden;background:#fff;margin-top:10px;max-width:100%}
+        .col-ready{width:64px;text-align:center}
+        .ready-check{width:18px;height:18px;accent-color:#2e7d32;cursor:pointer}
+        .ready-done{display:inline-flex;align-items:center;justify-content:center;color:#2e7d32;font-weight:700}
+        .item-row-delivered{background:#f3f6f3;color:#5f6f62}
+        .item-row-delivered input{background:#eef2ee;color:#5f6f62}
+        .delivered-section-row td{background:#eef5ee;color:#4f6b53;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:8px 12px;border-bottom:1px solid #dce8de}
         .add-row-btn{margin-top:12px;align-self:flex-start}
         .save-draft-btn{margin-top:10px;align-self:stretch;width:100%}
         table{width:100%;border-collapse:collapse;min-width:0}
@@ -749,10 +949,16 @@ export default function OrderPage() {
           .table-shell table,.table-shell tbody{display:block;width:100%}
           .table-shell thead{display:none}
           .table-shell tr{display:grid;grid-template-columns:1fr 1fr;gap:8px 10px;border:1px solid #e0ebe2;border-radius:12px;padding:12px;margin-bottom:10px;background:#fcfdfc}
+          .table-shell tr.delivered-section-row{display:block;border:none;background:transparent;padding:4px 2px;margin:4px 0 8px}
+          .table-shell tr.delivered-section-row td{padding:6px 4px;border:none;border-radius:8px}
+          .table-shell tr.item-row-delivered{background:#f3f6f3}
           .table-shell td{display:block;border:none;padding:0;min-width:0}
-          .table-shell td:nth-child(1){grid-column:1 / -1}
-          .table-shell td:nth-child(4){display:flex;align-items:flex-end;font-weight:700;color:#1b5e20;padding-bottom:10px}
-          .table-shell td:nth-child(5){grid-column:1 / -1;display:flex;justify-content:flex-end}
+          .table-shell td.col-ready{grid-column:1 / -1;display:flex;align-items:center;gap:8px}
+          .table-shell td.col-ready .item-line-label{margin-bottom:0}
+          .table-shell td:nth-child(1):not(.col-ready){grid-column:1 / -1}
+          .table-shell td.col-ready + td{grid-column:1 / -1}
+          .table-shell td:nth-last-child(2){display:flex;align-items:flex-end;font-weight:700;color:#1b5e20;padding-bottom:10px}
+          .table-shell td:last-child{grid-column:1 / -1;display:flex;justify-content:flex-end}
           .item-line-label{display:block;font-size:11px;color:#6b7a6f;font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px}
           .total{width:100%;justify-content:space-between}
         }

@@ -595,6 +595,26 @@ a.ll-btn.secondary {
   font-size: 14px;
 }
 
+.ll-order-preview-item.is-delivered {
+  background: #f5f8f5;
+  color: #5f6f62;
+}
+
+.ll-order-preview-delivered-badge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #e8f2e8;
+  color: #2e7d32;
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  vertical-align: middle;
+}
+
 .ll-order-preview-item span:nth-child(2),
 .ll-order-preview-item span:nth-child(3),
 .ll-order-preview-items-head span:nth-child(2),

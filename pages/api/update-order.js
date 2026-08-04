@@ -19,6 +19,9 @@ export default async function handler(req, res) {
       fileName: result.fileName,
       orderNumber: result.order.orderNumber,
       billFileName: result.order.billFileName,
+      deliveryBillFileNames: result.order.deliveryBillFileNames || [],
+      items: result.order.items || [],
+      total: result.order.total,
       status: result.order.status,
       paid: result.order.paid ?? false
     });

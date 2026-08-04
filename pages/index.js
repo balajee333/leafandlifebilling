@@ -206,7 +206,11 @@ export default function Home() {
 
   function orderTotalQty(order) {
     if (!Array.isArray(order.items)) return 0;
-    return order.items.reduce((sum, item) => sum + Number(item.qty || 0), 0);
+    const pendingOnly = order.status !== 'delivered';
+    return order.items.reduce((sum, item) => {
+      if (pendingOnly && item.delivered) return sum;
+      return sum + Number(item.qty || 0);
+    }, 0);
   }
 
   function matchesSearch(item, { numberKey }) {
@@ -241,6 +245,7 @@ export default function Home() {
     for (const order of orders) {
       if (order.status === 'delivered') continue;
       for (const item of order.items || []) {
+        if (item.delivered) continue;
         const product = String(item.product || '').trim();
         if (!product) continue;
         const key = product.toLowerCase();
@@ -301,6 +306,7 @@ export default function Home() {
     for (const order of orders) {
       if (order.status === 'delivered') continue;
       for (const item of order.items || []) {
+        if (item.delivered) continue;
         if (!String(item.product || '').trim()) continue;
         total += Number(item.qty || 0);
       }

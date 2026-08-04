@@ -93,8 +93,14 @@ export default function OrderPreviewModal({ fileName, onClose, onOpenOrder }) {
               {items.length === 0 ? (
                 <p className='ll-empty'>No items</p>
               ) : items.map((item, index) => (
-                <div className='ll-order-preview-item' key={`${item.product || 'item'}-${index}`}>
-                  <span>{item.product || '—'}</span>
+                <div
+                  className={`ll-order-preview-item${item.delivered ? ' is-delivered' : ''}`}
+                  key={`${item.product || 'item'}-${index}`}
+                >
+                  <span>
+                    {item.product || '—'}
+                    {item.delivered ? <em className='ll-order-preview-delivered-badge'>Delivered</em> : null}
+                  </span>
                   <span>{item.qty || 0}</span>
                   <span>₹ {(Number(item.qty || 0) * Number(item.price || 0)).toFixed(2)}</span>
                 </div>
