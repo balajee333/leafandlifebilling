@@ -116,7 +116,7 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [pastLoading, setPastLoading] = useState(false);
   const [pastLoaded, setPastLoaded] = useState(false);
-  const [collapsedFlats, setCollapsedFlats] = useState(() => new Set());
+  const [expandedFlats, setExpandedFlats] = useState(() => new Set());
   const [searchQuery, setSearchQuery] = useState('');
   const [itemOrdersDialog, setItemOrdersDialog] = useState(null);
   const [previewOrderFileName, setPreviewOrderFileName] = useState('');
@@ -126,12 +126,12 @@ export default function Home() {
   }
 
   function isFlatOpen(sectionId, flatName) {
-    return !collapsedFlats.has(flatGroupKey(sectionId, flatName));
+    return expandedFlats.has(flatGroupKey(sectionId, flatName));
   }
 
   function toggleFlat(sectionId, flatName) {
     const key = flatGroupKey(sectionId, flatName);
-    setCollapsedFlats(prev => {
+    setExpandedFlats(prev => {
       const next = new Set(prev);
       if (next.has(key)) next.delete(key);
       else next.add(key);
