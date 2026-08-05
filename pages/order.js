@@ -35,14 +35,12 @@ function sortItemsPendingFirst(list = []) {
   return [...pending, ...delivered];
 }
 
-function stripReady(item = {}) {
-  const { ready, ...rest } = item;
-  return rest;
-}
-
 function hydrateItems(list = []) {
   if (!Array.isArray(list) || !list.length) return [createEmptyItem()];
-  return sortItemsPendingFirst(list.map(item => ensureItemId({ ...stripReady(item), ready: false })));
+  return sortItemsPendingFirst(list.map(item => ensureItemId({
+    ...item,
+    ready: item.delivered ? false : Boolean(item.ready)
+  })));
 }
 
 function IconBtn({ href, onClick, label, disabled, danger, primary, children }) {
@@ -364,7 +362,10 @@ export default function OrderPage() {
           ...(item.deliveredAt ? { deliveredAt: item.deliveredAt } : {})
         };
       }
-      return base;
+      return {
+        ...base,
+        ready: Boolean(item.ready)
+      };
     });
     const orderTotal = normalizedItems.reduce((sum, item) => sum + Number(item.total || 0), 0);
     return {
@@ -511,12 +512,14 @@ export default function OrderPage() {
         newlyDelivered.push(deliveredItem);
         return deliveredItem;
       }
+      // Clear ready on remaining pending items after a delivery batch.
       return {
         ...idFields,
         product: String(item.product || '').trim(),
         qty: Number(item.qty || 0),
         price: Number(item.price || 0),
-        total: Number(item.qty || 0) * Number(item.price || 0)
+        total: Number(item.qty || 0) * Number(item.price || 0),
+        ready: false
       };
     });
     const sortedItems = sortItemsPendingFirst(nextItems);
