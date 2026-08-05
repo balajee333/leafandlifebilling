@@ -14,7 +14,7 @@ function nextItemId() {
 }
 
 function createEmptyItem(overrides = {}) {
-  return { id: nextItemId(), product: '', qty: 1, price: '', ready: false, ...overrides };
+  return { id: nextItemId(), product: '', qty: 1, price: '', ready: true, ...overrides };
 }
 
 function ensureItemId(item = {}) {
