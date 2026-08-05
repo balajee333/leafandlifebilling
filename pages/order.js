@@ -6,7 +6,20 @@ import { billPdfBaseName, printWithPdfTitle } from '../lib/print-pdf';
 import { openWhatsAppChat, toTelUrl, toWhatsAppUrl } from '../lib/whatsapp';
 
 const today = new Date().toISOString().slice(0, 10);
-const emptyItem = { product: '', qty: 1, price: '' };
+let itemIdSeq = 0;
+
+function nextItemId() {
+  itemIdSeq += 1;
+  return `item-${Date.now()}-${itemIdSeq}`;
+}
+
+function createEmptyItem(overrides = {}) {
+  return { id: nextItemId(), product: '', qty: 1, price: '', ready: false, ...overrides };
+}
+
+function ensureItemId(item = {}) {
+  return item.id ? item : { ...item, id: nextItemId() };
+}
 
 function isRealItem(item) {
   return Boolean(String(item?.product || '').trim());
@@ -25,6 +38,11 @@ function sortItemsPendingFirst(list = []) {
 function stripReady(item = {}) {
   const { ready, ...rest } = item;
   return rest;
+}
+
+function hydrateItems(list = []) {
+  if (!Array.isArray(list) || !list.length) return [createEmptyItem()];
+  return sortItemsPendingFirst(list.map(item => ensureItemId({ ...stripReady(item), ready: false })));
 }
 
 function IconBtn({ href, onClick, label, disabled, danger, primary, children }) {
@@ -133,7 +151,7 @@ export default function OrderPage() {
   const [flatNumber, setFlatNumber] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
   const [date, setDate] = useState(today);
-  const [items, setItems] = useState([emptyItem]);
+  const [items, setItems] = useState(() => [createEmptyItem()]);
   const [loading, setLoading] = useState(false);
   const [flatNames, setFlatNames] = useState([]);
   const [confirmDialog, setConfirmDialog] = useState(null);
@@ -201,7 +219,7 @@ export default function OrderPage() {
     setFlatNumber('');
     setCustomerPhone('');
     setDate(today);
-    setItems([emptyItem]);
+    setItems([createEmptyItem()]);
   }
 
   async function loadLinkedBillNumber(name) {
@@ -239,11 +257,7 @@ export default function OrderPage() {
       setFlatNumber(data.flatNumber || '');
       setCustomerPhone(data.customerPhone || '');
       setDate(data.date || today);
-      setItems(
-        Array.isArray(data.items) && data.items.length
-          ? sortItemsPendingFirst(data.items.map(item => ({ ...item, ready: false })))
-          : [emptyItem]
-      );
+      setItems(hydrateItems(data.items));
       await loadLinkedBillNumber(data.billFileName || '');
     } catch (error) {
       alert('Could not load order.');
@@ -274,7 +288,7 @@ export default function OrderPage() {
       setFlatNumber(data.flatNumber || '');
       setCustomerPhone(data.customerPhone || '');
       setDate(today);
-      setItems([emptyItem]);
+      setItems([createEmptyItem()]);
       skipResetRef.current = true;
       router.replace('/order', undefined, { shallow: true });
     } catch (error) {
@@ -320,7 +334,7 @@ export default function OrderPage() {
     setItems(current => {
       const pending = current.filter(item => !item.delivered);
       const delivered = current.filter(item => item.delivered);
-      return [...pending, emptyItem, ...delivered];
+      return [...pending, createEmptyItem(), ...delivered];
     });
   }
 
@@ -331,7 +345,7 @@ export default function OrderPage() {
     if (!confirm('Remove this item from the order?')) return;
     setItems(current => {
       const next = current.filter((_, idx) => idx !== index);
-      return next.length ? sortItemsPendingFirst(next) : [emptyItem];
+      return next.length ? sortItemsPendingFirst(next) : [createEmptyItem()];
     });
   }
 
@@ -416,9 +430,9 @@ export default function OrderPage() {
     setStatus(result.status || targetStatus);
     setPaid(result.paid ?? paidState);
     if (Array.isArray(result.items) && result.items.length) {
-      setItems(sortItemsPendingFirst(result.items.map(item => ({ ...stripReady(item), ready: false }))));
+      setItems(hydrateItems(result.items));
     } else if (itemsOverride) {
-      setItems(sortItemsPendingFirst(itemsOverride.map(item => ({ ...stripReady(item), ready: false }))));
+      setItems(hydrateItems(itemsOverride));
     }
     await loadFlatNames();
     await loadLinkedBillNumber(result.billFileName || billFileName || '');
@@ -472,8 +486,10 @@ export default function OrderPage() {
     const deliveredAt = new Date().toISOString();
     const newlyDelivered = [];
     const nextItems = items.map(item => {
+      const idFields = item.id ? { id: item.id } : {};
       if (item.delivered) {
         return {
+          ...idFields,
           product: String(item.product || '').trim(),
           qty: Number(item.qty || 0),
           price: Number(item.price || 0),
@@ -484,6 +500,7 @@ export default function OrderPage() {
       }
       if (item.ready && isRealItem(item)) {
         const deliveredItem = {
+          ...idFields,
           product: String(item.product || '').trim(),
           qty: Number(item.qty || 0),
           price: Number(item.price || 0),
@@ -495,6 +512,7 @@ export default function OrderPage() {
         return deliveredItem;
       }
       return {
+        ...idFields,
         product: String(item.product || '').trim(),
         qty: Number(item.qty || 0),
         price: Number(item.price || 0),
@@ -537,13 +555,14 @@ export default function OrderPage() {
     setLoading(true);
     try {
       const clearedItems = items.map(item => ({
+        ...(item.id ? { id: item.id } : {}),
         product: String(item.product || '').trim(),
         qty: Number(item.qty || 0),
         price: Number(item.price || 0),
         total: Number(item.qty || 0) * Number(item.price || 0)
       }));
       await persistOrder('draft', paid, 'Order moved back to draft. Linked bill updated.', {
-        itemsOverride: clearedItems.length ? clearedItems : [emptyItem]
+        itemsOverride: clearedItems.length ? clearedItems : [createEmptyItem()]
       });
     } finally {
       setLoading(false);
@@ -729,7 +748,7 @@ export default function OrderPage() {
                       && item.delivered
                       && (rowIndex === 0 || !displayRows[rowIndex - 1].item.delivered);
                     return (
-                      <Fragment key={`${index}-${item.delivered ? 'd' : 'p'}-${item.product || 'item'}`}>
+                      <Fragment key={item.id}>
                         {showDeliveredDivider && (
                           <tr className='delivered-section-row'>
                             <td colSpan={isDelivered ? 5 : 6}>Delivered</td>
