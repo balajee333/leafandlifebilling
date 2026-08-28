@@ -730,12 +730,12 @@ export default function Home() {
               {renderOrdersTable(notDeliveredOrders, 'No undelivered orders.', { showPaid: true, sectionId: 'orders-not-delivered' })}
             </section>
             <section className='ll-panel'>
-              <h2>On Hold <span className='ll-section-count'>({onHoldOrders.length})</span></h2>
-              {renderOrdersTable(onHoldOrders, 'No orders on hold.', { showPaid: true, sectionId: 'orders-on-hold' })}
-            </section>
-            <section className='ll-panel'>
               <h2>Delivered · Not Paid <span className='ll-section-count'>({deliveredUnpaidOrders.length})</span></h2>
               {renderOrdersTable(deliveredUnpaidOrders, 'No delivered unpaid orders.', { showPaid: true, sectionId: 'orders-delivered-unpaid' })}
+            </section>
+            <section className='ll-panel'>
+              <h2>On Hold <span className='ll-section-count'>({onHoldOrders.length})</span></h2>
+              {renderOrdersTable(onHoldOrders, 'No orders on hold.', { showPaid: true, sectionId: 'orders-on-hold' })}
             </section>
           </div>
         ) : tab === 'items' ? (
