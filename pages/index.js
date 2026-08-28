@@ -113,9 +113,12 @@ export default function Home() {
   const [tab, setTab] = useState('orders');
   const [orders, setOrders] = useState([]);
   const [pastOrders, setPastOrders] = useState([]);
+  const [wishOrders, setWishOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [pastLoading, setPastLoading] = useState(false);
   const [pastLoaded, setPastLoaded] = useState(false);
+  const [wishLoading, setWishLoading] = useState(false);
+  const [wishLoaded, setWishLoaded] = useState(false);
   const [expandedFlats, setExpandedFlats] = useState(() => new Set());
   const [searchQuery, setSearchQuery] = useState('');
   const [itemOrdersDialog, setItemOrdersDialog] = useState(null);
@@ -146,12 +149,15 @@ export default function Home() {
   useEffect(() => {
     if (!router.isReady) return;
     const q = router.query.tab;
-    setTab(q === 'past' || q === 'items' ? q : 'orders');
+    setTab(q === 'past' || q === 'items' || q === 'wish' ? q : 'orders');
   }, [router.isReady, router.query.tab]);
 
   useEffect(() => {
     if (tab === 'past') {
       loadPastOrders();
+    }
+    if (tab === 'wish' || tab === 'items') {
+      loadWishOrders();
     }
   }, [tab]);
 
@@ -204,6 +210,24 @@ export default function Home() {
     }
   }
 
+  async function loadWishOrders() {
+    if (wishLoading || wishLoaded) return;
+    setWishLoading(true);
+    try {
+      const ordersRes = await fetch('/api/orders?scope=wish');
+      const ordersData = await ordersRes.json().catch(() => ({}));
+      if (!ordersRes.ok) throw new Error(ordersData.error || 'Unable to load wish orders.');
+
+      const orderList = Array.isArray(ordersData) ? ordersData : [];
+      setWishOrders(orderList.slice().sort((a, b) => new Date(b.updatedAt || b.createdAt || 0) - new Date(a.updatedAt || a.createdAt || 0)));
+      setWishLoaded(true);
+    } catch (error) {
+      alert(error.message || 'Unable to load wish orders.');
+    } finally {
+      setWishLoading(false);
+    }
+  }
+
   function orderTotalQty(order) {
     if (!Array.isArray(order.items)) return 0;
     const pendingOnly = order.status !== 'delivered';
@@ -240,12 +264,18 @@ export default function Home() {
     [pastOrders, searchQuery]
   );
 
-  const itemsToDeliver = useMemo(() => {
+  const wishOrdersFiltered = useMemo(
+    () => wishOrders.filter(order => matchesSearch(order, { numberKey: 'orderNumber' })),
+    [wishOrders, searchQuery]
+  );
+
+  function aggregateItemsByProduct(orderList, { includeItem } = {}) {
     const totals = new Map();
-    for (const order of orders) {
+    for (const order of orderList) {
       if (order.status === 'delivered') continue;
       for (const item of order.items || []) {
         if (item.delivered) continue;
+        if (includeItem && !includeItem(item)) continue;
         const product = String(item.product || '').trim();
         if (!product) continue;
         const key = product.toLowerCase();
@@ -284,8 +314,10 @@ export default function Home() {
         }
       }
     }
+    return totals;
+  }
 
-    const q = searchQuery.trim().toLowerCase();
+  function finalizeItemRows(totals, q) {
     return Array.from(totals.values())
       .map(row => ({
         product: row.product,
@@ -299,14 +331,24 @@ export default function Home() {
       }))
       .filter(row => !q || row.product.toLowerCase().includes(q))
       .sort((a, b) => a.product.localeCompare(b.product, undefined, { sensitivity: 'base' }));
+  }
+
+  const itemsToDeliver = useMemo(() => {
+    const totals = aggregateItemsByProduct(orders, { includeItem: item => !item.hold });
+    return finalizeItemRows(totals, searchQuery.trim().toLowerCase());
   }, [orders, searchQuery]);
+
+  const wishListItems = useMemo(() => {
+    const totals = aggregateItemsByProduct(wishOrders);
+    return finalizeItemRows(totals, searchQuery.trim().toLowerCase());
+  }, [wishOrders, searchQuery]);
 
   const itemsToDeliverTotalQty = useMemo(() => {
     let total = 0;
     for (const order of orders) {
       if (order.status === 'delivered') continue;
       for (const item of order.items || []) {
-        if (item.delivered) continue;
+        if (item.delivered || item.hold) continue;
         if (!String(item.product || '').trim()) continue;
         total += Number(item.qty || 0);
       }
@@ -487,12 +529,12 @@ export default function Home() {
     );
   }
 
-  function renderItemsToDeliver() {
-    if (loading) {
+  function renderItemsList(list, emptyMessage, { qtyLabel = 'to deliver', isLoading = loading } = {}) {
+    if (isLoading) {
       return <p className='ll-empty'>Loading items…</p>;
     }
-    if (itemsToDeliver.length === 0) {
-      return <p className='ll-empty'>No items to deliver.</p>;
+    if (list.length === 0) {
+      return <p className='ll-empty'>{emptyMessage}</p>;
     }
 
     return (
@@ -506,7 +548,7 @@ export default function Home() {
               </tr>
             </thead>
             <tbody>
-              {itemsToDeliver.map(item => (
+              {list.map(item => (
                 <tr
                   key={item.product}
                   className='ll-data-row'
@@ -519,7 +561,7 @@ export default function Home() {
                   }}
                   tabIndex={0}
                   role='link'
-                  aria-label={`${item.product}, ${item.qty} to deliver`}
+                  aria-label={`${item.product}, ${item.qty} ${qtyLabel}`}
                 >
                   <td className='col-item'>{item.product}</td>
                   <td className='col-qty'><strong>{item.qty}</strong></td>
@@ -531,7 +573,7 @@ export default function Home() {
 
         <div className='ll-mobile-list ll-mobile-only'>
           <div className='ll-mobile-cards ll-items-cards'>
-            {itemsToDeliver.map(item => (
+            {list.map(item => (
               <button
                 key={item.product}
                 type='button'
@@ -540,7 +582,7 @@ export default function Home() {
               >
                 <div className='ll-item-card-name'>{item.product}</div>
                 <div className='ll-item-card-meta'>
-                  <span><strong>{item.qty}</strong> to deliver</span>
+                  <span><strong>{item.qty}</strong> {qtyLabel}</span>
                 </div>
               </button>
             ))}
@@ -646,6 +688,7 @@ export default function Home() {
           <button type='button' className={tab === 'items' ? 'll-tab active' : 'll-tab'} onClick={() => selectTab('items')}>
             Items to Deliver{loading ? '' : ` (${itemsToDeliverTotalQty})`}
           </button>
+          <button type='button' className={tab === 'wish' ? 'll-tab active' : 'll-tab'} onClick={() => selectTab('wish')}>Wish Orders</button>
           <button type='button' className={tab === 'past' ? 'll-tab active' : 'll-tab'} onClick={() => selectTab('past')}>Past Orders</button>
         </div>
 
@@ -664,7 +707,21 @@ export default function Home() {
           <div className='ll-grid'>
             <section className='ll-panel'>
               <h2>Items to be delivered</h2>
-              {renderItemsToDeliver()}
+              {renderItemsList(itemsToDeliver, 'No items to deliver.')}
+            </section>
+            <section className='ll-panel'>
+              <h2>Wish List <span className='ll-section-count'>({wishLoading && !wishLoaded ? '…' : wishListItems.length})</span></h2>
+              {renderItemsList(wishListItems, 'No wish list items.', { qtyLabel: 'wished', isLoading: wishLoading && !wishLoaded })}
+            </section>
+          </div>
+        ) : tab === 'wish' ? (
+          <div className='ll-grid'>
+            <section className='ll-panel'>
+              <h2>Wish Orders <span className='ll-section-count'>({wishLoading && !wishLoaded ? '…' : wishOrdersFiltered.length})</span></h2>
+              {renderOrdersTable(wishOrdersFiltered, 'No wish orders yet.', {
+                sectionId: 'orders-wish',
+                isLoading: wishLoading && !wishLoaded
+              })}
             </section>
           </div>
         ) : (
@@ -682,9 +739,9 @@ export default function Home() {
 
         <a
           className='ll-fab'
-          href='/order'
-          aria-label='Create new order'
-          title='Create new order'
+          href={tab === 'wish' ? '/order?wish=1' : '/order'}
+          aria-label={tab === 'wish' ? 'Create new wish order' : 'Create new order'}
+          title={tab === 'wish' ? 'Create new wish order' : 'Create new order'}
         >
           <svg viewBox='0 0 24 24' width='28' height='28' aria-hidden='true' focusable='false'>
             <path fill='currentColor' d='M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z' />

@@ -7,7 +7,7 @@ export default async function handler(req, res) {
   }
   try {
     const scopeRaw = String(req.query.scope || 'all').toLowerCase();
-    const scope = ['active', 'past', 'all'].includes(scopeRaw) ? scopeRaw : 'all';
+    const scope = ['active', 'past', 'wish', 'all'].includes(scopeRaw) ? scopeRaw : 'all';
     const orders = await listOrders({ scope });
     res.status(200).json(orders);
   } catch (error) {

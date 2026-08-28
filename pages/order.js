@@ -14,7 +14,7 @@ function nextItemId() {
 }
 
 function createEmptyItem(overrides = {}) {
-  return { id: nextItemId(), product: '', qty: 1, price: '', ready: true, ...overrides };
+  return { id: nextItemId(), product: '', qty: 1, price: '', ready: true, hold: false, ...overrides };
 }
 
 function ensureItemId(item = {}) {
@@ -39,7 +39,8 @@ function hydrateItems(list = []) {
   if (!Array.isArray(list) || !list.length) return [createEmptyItem()];
   return sortItemsPendingFirst(list.map(item => ensureItemId({
     ...item,
-    ready: item.delivered ? false : Boolean(item.ready)
+    ready: item.delivered ? false : Boolean(item.ready),
+    hold: item.delivered ? false : Boolean(item.hold)
   })));
 }
 
@@ -135,7 +136,7 @@ const icons = {
 
 export default function OrderPage() {
   const router = useRouter();
-  const { fileName, copyFrom } = router.query;
+  const { fileName, copyFrom, wish } = router.query;
 
   const [currentFileName, setCurrentFileName] = useState('');
   const [orderNumber, setOrderNumber] = useState('---');
@@ -166,6 +167,8 @@ export default function OrderPage() {
   );
   const hasDeliveredItems = useMemo(() => items.some(item => item.delivered), [items]);
   const isDelivered = status === 'delivered';
+  const isWish = status === 'wish';
+  const showReadyHold = !isDelivered && !isWish;
   const canCreateAnother = Boolean(currentFileName);
   const whatsappUrl = toWhatsAppUrl(customerPhone);
   const telUrl = toTelUrl(customerPhone);
@@ -191,8 +194,8 @@ export default function OrderPage() {
       skipResetRef.current = false;
       return;
     }
-    resetOrder();
-  }, [router.isReady, fileName, copyFrom]);
+    resetOrder(wish === '1' || wish === 'true');
+  }, [router.isReady, fileName, copyFrom, wish]);
 
   async function loadFlatNames() {
     try {
@@ -204,13 +207,13 @@ export default function OrderPage() {
     }
   }
 
-  function resetOrder() {
+  function resetOrder(startAsWish = false) {
     setCurrentFileName('');
     setOrderNumber('---');
     setBillFileName('');
     setDeliveryBillFileNames([]);
     setBillNumber('---');
-    setStatus('draft');
+    setStatus(startAsWish ? 'wish' : 'draft');
     setPaid(false);
     setCustomerName('');
     setFlatName('');
@@ -322,8 +325,17 @@ export default function OrderPage() {
   function toggleReady(index) {
     if (isDelivered) return;
     setItems(current => current.map((item, idx) => {
-      if (idx !== index || item.delivered) return item;
+      if (idx !== index || item.delivered || item.hold) return item;
       return { ...item, ready: !item.ready };
+    }));
+  }
+
+  function toggleHold(index) {
+    if (isDelivered) return;
+    setItems(current => current.map((item, idx) => {
+      if (idx !== index || item.delivered) return item;
+      const hold = !item.hold;
+      return { ...item, hold, ready: hold ? false : item.ready };
     }));
   }
 
@@ -364,7 +376,8 @@ export default function OrderPage() {
       }
       return {
         ...base,
-        ready: Boolean(item.ready)
+        ready: Boolean(item.ready),
+        hold: Boolean(item.hold)
       };
     });
     const orderTotal = normalizedItems.reduce((sum, item) => sum + Number(item.total || 0), 0);
@@ -452,7 +465,7 @@ export default function OrderPage() {
 
   async function saveDraft() {
     if (!validateRequired()) return;
-    await persistOrder('draft', paid, 'Order draft saved. Linked draft bill created/updated.', { useInfoModal: true });
+    await persistOrder(status, paid, isWish ? 'Wish order saved.' : 'Order draft saved. Linked draft bill created/updated.', { useInfoModal: true });
   }
 
   function closeConfirm() {
@@ -519,7 +532,8 @@ export default function OrderPage() {
         qty: Number(item.qty || 0),
         price: Number(item.price || 0),
         total: Number(item.qty || 0) * Number(item.price || 0),
-        ready: false
+        ready: false,
+        hold: Boolean(item.hold)
       };
     });
     const sortedItems = sortItemsPendingFirst(nextItems);
@@ -580,6 +594,20 @@ export default function OrderPage() {
       message: 'Mark this order as paid?\n\nThe linked bill will also be marked as paid.',
       confirmLabel: 'Mark Paid',
       run: () => persistOrder(status, true, 'Order marked as paid. Linked bill updated.')
+    });
+  }
+
+  function markAvailable() {
+    if (!isWish) return;
+    if (!validateRequired()) return;
+    setConfirmDialog({
+      title: 'Mark as Available',
+      message: 'Move this wish order to Orders?\n\nA linked draft bill will be created.',
+      confirmLabel: 'Mark Available',
+      run: () => persistOrder('draft', paid, 'Order moved to Orders. Linked draft bill created.', {
+        useInfoModal: true,
+        infoTitle: 'Order Available'
+      })
     });
   }
 
@@ -644,8 +672,10 @@ export default function OrderPage() {
               <img className='header-logo' src='/logo.png' alt='Leaf & Life logo' />
             </a>
             <div className='header-title'>
-              <h1>Order</h1>
-              <p>Create orders for flat deliveries. Saving creates a linked draft bill automatically.</p>
+              <h1>{isWish ? 'Wish Order' : 'Order'}</h1>
+              <p>{isWish
+                ? 'Track items the customer wants that are out of stock. Mark available once stock is in.'
+                : 'Create orders for flat deliveries. Saving creates a linked draft bill automatically.'}</p>
             </div>
           </div>
           <div className='actions' role='toolbar' aria-label='Order actions'>
@@ -662,8 +692,13 @@ export default function OrderPage() {
             ) : (
               <IconBtn disabled label='No mobile number'>{icons.call}</IconBtn>
             )}
-            <IconBtn onClick={printLinkedBill} disabled={loading || !billFileName} label='Print / Save PDF'>{icons.print}</IconBtn>
-            {!isDelivered && (
+            {!isWish && (
+              <IconBtn onClick={printLinkedBill} disabled={loading || !billFileName} label='Print / Save PDF'>{icons.print}</IconBtn>
+            )}
+            {isWish && (
+              <IconBtn onClick={markAvailable} disabled={loading} label='Mark as Available'>{icons.paid}</IconBtn>
+            )}
+            {!isWish && !isDelivered && (
               <IconBtn onClick={markDelivered} disabled={loading} label='Mark as Delivered'>{icons.deliver}</IconBtn>
             )}
             {isDelivered && (
@@ -672,11 +707,11 @@ export default function OrderPage() {
                 <IconBtn onClick={unmarkDelivered} disabled={loading} label='Unmark Delivered'>{icons.undo}</IconBtn>
               </>
             )}
-            {!paid ? (
+            {!isWish && (!paid ? (
               <IconBtn onClick={markPaid} disabled={loading} label='Mark as Paid'>{icons.pay}</IconBtn>
             ) : (
               <IconBtn disabled label='Paid'>{icons.paid}</IconBtn>
-            )}
+            ))}
             <IconBtn danger onClick={deleteCurrentOrder} label='Delete Order'>{icons.trash}</IconBtn>
           </div>
         </div>
@@ -690,7 +725,7 @@ export default function OrderPage() {
             </div>
             <div className='field'>
               <label>Status</label>
-              <div className='status-pill'>{`${status === 'delivered' ? 'Delivered' : 'Draft'} · ${paid ? 'Paid' : 'Pending'}`}</div>
+              <div className='status-pill'>{isWish ? 'Wish' : `${status === 'delivered' ? 'Delivered' : 'Draft'} · ${paid ? 'Paid' : 'Pending'}`}</div>
             </div>
             <div className='field'>
               <label>Customer Name</label>
@@ -736,7 +771,8 @@ export default function OrderPage() {
               <table>
                 <thead>
                   <tr>
-                    {!isDelivered && <th className='col-ready'>Ready</th>}
+                    {showReadyHold && <th className='col-ready'>Ready</th>}
+                    {showReadyHold && <th className='col-hold'>Hold</th>}
                     <th>Product</th>
                     <th>Qty</th>
                     <th>Price</th>
@@ -754,11 +790,11 @@ export default function OrderPage() {
                       <Fragment key={item.id}>
                         {showDeliveredDivider && (
                           <tr className='delivered-section-row'>
-                            <td colSpan={isDelivered ? 5 : 6}>Delivered</td>
+                            <td colSpan={showReadyHold ? 7 : 5}>Delivered</td>
                           </tr>
                         )}
                         <tr className={item.delivered ? 'item-row-delivered' : undefined}>
-                          {!isDelivered && (
+                          {showReadyHold && (
                             <td className='col-ready'>
                               <span className='item-line-label'>Ready</span>
                               {item.delivered ? (
@@ -769,8 +805,23 @@ export default function OrderPage() {
                                   className='ready-check'
                                   checked={Boolean(item.ready)}
                                   onChange={() => toggleReady(index)}
-                                  disabled={loading}
+                                  disabled={loading || Boolean(item.hold)}
                                   aria-label={`Mark ${item.product || 'item'} ready for delivery`}
+                                />
+                              )}
+                            </td>
+                          )}
+                          {showReadyHold && (
+                            <td className='col-hold'>
+                              <span className='item-line-label'>Hold</span>
+                              {item.delivered ? null : (
+                                <input
+                                  type='checkbox'
+                                  className='hold-check'
+                                  checked={Boolean(item.hold)}
+                                  onChange={() => toggleHold(index)}
+                                  disabled={loading}
+                                  aria-label={`Hold ${item.product || 'item'} from Items to Deliver`}
                                 />
                               )}
                             </td>
@@ -810,7 +861,7 @@ export default function OrderPage() {
             {!isDelivered && (
               <button className='button save-draft-btn' onClick={saveDraft} disabled={loading}>
                 <span className='btn-icon'>{icons.save}</span>
-                Save Draft
+                {isWish ? 'Save Wish Order' : 'Save Draft'}
               </button>
             )}
           </div>
@@ -914,7 +965,9 @@ export default function OrderPage() {
         input:focus{outline:none;border-color:#2e7d32}
         .table-shell{border:1px solid #e8efe9;border-radius:14px;overflow:hidden;background:#fff;margin-top:10px;max-width:100%}
         .col-ready{width:64px;text-align:center}
+        .col-hold{width:64px;text-align:center}
         .ready-check{width:18px;height:18px;accent-color:#2e7d32;cursor:pointer}
+        .hold-check{width:18px;height:18px;accent-color:#c62828;cursor:pointer}
         .ready-done{display:inline-flex;align-items:center;justify-content:center;color:#2e7d32;font-weight:700}
         .item-row-delivered{background:#f3f6f3;color:#5f6f62}
         .item-row-delivered input{background:#eef2ee;color:#5f6f62}
@@ -976,9 +1029,10 @@ export default function OrderPage() {
           .table-shell tr.item-row-delivered{background:#f3f6f3}
           .table-shell td{display:block;border:none;padding:0;min-width:0}
           .table-shell td.col-ready{grid-column:1 / -1;display:flex;align-items:center;gap:8px}
-          .table-shell td.col-ready .item-line-label{margin-bottom:0}
-          .table-shell td:nth-child(1):not(.col-ready){grid-column:1 / -1}
-          .table-shell td.col-ready + td{grid-column:1 / -1}
+          .table-shell td.col-hold{grid-column:1 / -1;display:flex;align-items:center;gap:8px}
+          .table-shell td.col-ready .item-line-label,.table-shell td.col-hold .item-line-label{margin-bottom:0}
+          .table-shell td:nth-child(1):not(.col-ready):not(.col-hold){grid-column:1 / -1}
+          .table-shell td.col-hold + td{grid-column:1 / -1}
           .table-shell td:nth-last-child(2){display:flex;align-items:flex-end;font-weight:700;color:#1b5e20;padding-bottom:10px}
           .table-shell td:last-child{grid-column:1 / -1;display:flex;justify-content:flex-end}
           .item-line-label{display:block;font-size:11px;color:#6b7a6f;font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px}
