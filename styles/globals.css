@@ -222,6 +222,24 @@ a.ll-btn.secondary {
   color: #2e7d32;
 }
 
+.ll-panel-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  border: none;
+  background: none;
+  padding: 0;
+  margin: 0 0 12px;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+}
+
+.ll-panel-toggle h2 {
+  margin: 0;
+}
+
 .ll-section-count {
   font-weight: 600;
   color: #4a6b50;

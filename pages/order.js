@@ -14,7 +14,7 @@ function nextItemId() {
 }
 
 function createEmptyItem(overrides = {}) {
-  return { id: nextItemId(), product: '', qty: 1, price: '', ready: true, hold: false, ...overrides };
+  return { id: nextItemId(), product: '', qty: 1, price: '', ready: true, ...overrides };
 }
 
 function ensureItemId(item = {}) {
@@ -39,8 +39,7 @@ function hydrateItems(list = []) {
   if (!Array.isArray(list) || !list.length) return [createEmptyItem()];
   return sortItemsPendingFirst(list.map(item => ensureItemId({
     ...item,
-    ready: item.delivered ? false : Boolean(item.ready),
-    hold: item.delivered ? false : Boolean(item.hold)
+    ready: item.delivered ? false : Boolean(item.ready)
   })));
 }
 
@@ -131,6 +130,11 @@ const icons = {
     <svg viewBox='0 0 24 24' width='20' height='20' aria-hidden='true' focusable='false'>
       <path fill='currentColor' d='M6.62 10.79a15.15 15.15 0 0 0 6.59 6.59l2.2-2.2a1 1 0 0 1 1.01-.24c1.12.37 2.33.57 3.58.57a1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.57a1 1 0 0 1-.25 1.02l-2.2 2.2z' />
     </svg>
+  ),
+  hold: (
+    <svg viewBox='0 0 24 24' width='20' height='20' aria-hidden='true' focusable='false'>
+      <path fill='currentColor' d='M8 5h3v14H8zm5 0h3v14h-3z' />
+    </svg>
   )
 };
 
@@ -145,6 +149,7 @@ export default function OrderPage() {
   const [billNumber, setBillNumber] = useState('---');
   const [status, setStatus] = useState('draft');
   const [paid, setPaid] = useState(false);
+  const [hold, setHold] = useState(false);
   const [customerName, setCustomerName] = useState('');
   const [flatName, setFlatName] = useState('');
   const [flatNumber, setFlatNumber] = useState('');
@@ -215,6 +220,7 @@ export default function OrderPage() {
     setBillNumber('---');
     setStatus(startAsWish ? 'wish' : 'draft');
     setPaid(false);
+    setHold(false);
     setCustomerName('');
     setFlatName('');
     setFlatNumber('');
@@ -253,6 +259,7 @@ export default function OrderPage() {
       setDeliveryBillFileNames(Array.isArray(data.deliveryBillFileNames) ? data.deliveryBillFileNames : []);
       setStatus(data.status || 'draft');
       setPaid(data.paid ?? false);
+      setHold(data.hold ?? false);
       setCustomerName(data.customerName || '');
       setFlatName(data.flatName || '');
       setFlatNumber(data.flatNumber || '');
@@ -284,6 +291,7 @@ export default function OrderPage() {
       setBillNumber('---');
       setStatus('draft');
       setPaid(false);
+      setHold(false);
       setCustomerName(data.customerName || '');
       setFlatName(data.flatName || '');
       setFlatNumber(data.flatNumber || '');
@@ -325,17 +333,8 @@ export default function OrderPage() {
   function toggleReady(index) {
     if (isDelivered) return;
     setItems(current => current.map((item, idx) => {
-      if (idx !== index || item.delivered || item.hold) return item;
-      return { ...item, ready: !item.ready };
-    }));
-  }
-
-  function toggleHold(index) {
-    if (isDelivered) return;
-    setItems(current => current.map((item, idx) => {
       if (idx !== index || item.delivered) return item;
-      const hold = !item.hold;
-      return { ...item, hold, ready: hold ? false : item.ready };
+      return { ...item, ready: !item.ready };
     }));
   }
 
@@ -359,7 +358,7 @@ export default function OrderPage() {
     });
   }
 
-  function collectOrderData(targetStatus, paidState = paid, itemsSource = items) {
+  function collectOrderData(targetStatus, paidState = paid, itemsSource = items, holdState = hold) {
     const normalizedItems = itemsSource.map(item => {
       const base = {
         product: String(item.product || '').trim(),
@@ -376,8 +375,7 @@ export default function OrderPage() {
       }
       return {
         ...base,
-        ready: Boolean(item.ready),
-        hold: Boolean(item.hold)
+        ready: Boolean(item.ready)
       };
     });
     const orderTotal = normalizedItems.reduce((sum, item) => sum + Number(item.total || 0), 0);
@@ -394,7 +392,8 @@ export default function OrderPage() {
       items: normalizedItems,
       total: orderTotal,
       status: targetStatus,
-      paid: paidState
+      paid: paidState,
+      hold: holdState
     };
   }
 
@@ -414,9 +413,10 @@ export default function OrderPage() {
     useInfoModal = false,
     itemsOverride = null,
     partialDeliveryBatch = null,
-    infoTitle = null
+    infoTitle = null,
+    holdOverride = hold
   } = {}) {
-    const payload = collectOrderData(targetStatus, paidState, itemsOverride || items);
+    const payload = collectOrderData(targetStatus, paidState, itemsOverride || items, holdOverride);
     if (partialDeliveryBatch?.length) {
       payload.partialDeliveryBatch = partialDeliveryBatch.map(item => ({
         product: String(item.product || '').trim(),
@@ -443,6 +443,7 @@ export default function OrderPage() {
     setDeliveryBillFileNames(Array.isArray(result.deliveryBillFileNames) ? result.deliveryBillFileNames : deliveryBillFileNames);
     setStatus(result.status || targetStatus);
     setPaid(result.paid ?? paidState);
+    setHold(result.hold ?? holdOverride);
     if (Array.isArray(result.items) && result.items.length) {
       setItems(hydrateItems(result.items));
     } else if (itemsOverride) {
@@ -532,8 +533,7 @@ export default function OrderPage() {
         qty: Number(item.qty || 0),
         price: Number(item.price || 0),
         total: Number(item.qty || 0) * Number(item.price || 0),
-        ready: false,
-        hold: Boolean(item.hold)
+        ready: false
       };
     });
     const sortedItems = sortItemsPendingFirst(nextItems);
@@ -547,7 +547,8 @@ export default function OrderPage() {
           useInfoModal: true,
           infoTitle: 'Order Delivered',
           itemsOverride: sortedItems,
-          partialDeliveryBatch: newlyDelivered
+          partialDeliveryBatch: newlyDelivered,
+          holdOverride: false
         })
       });
       return;
@@ -607,6 +608,21 @@ export default function OrderPage() {
       run: () => persistOrder('draft', paid, 'Order moved to Orders. Linked draft bill created.', {
         useInfoModal: true,
         infoTitle: 'Order Available'
+      })
+    });
+  }
+
+  function toggleHold() {
+    if (isDelivered || isWish) return;
+    const nextHold = !hold;
+    setConfirmDialog({
+      title: nextHold ? 'Put on Hold' : 'Resume Order',
+      message: nextHold
+        ? 'Put this order on hold?\n\nIt will move to the On Hold group and its items will drop out of Items to Deliver.'
+        : 'Resume this order from hold?\n\nIts items will count toward Items to Deliver again.',
+      confirmLabel: nextHold ? 'Put on Hold' : 'Resume Order',
+      run: () => persistOrder(status, paid, nextHold ? 'Order put on hold.' : 'Order resumed from hold.', {
+        holdOverride: nextHold
       })
     });
   }
@@ -707,6 +723,9 @@ export default function OrderPage() {
                 <IconBtn onClick={unmarkDelivered} disabled={loading} label='Unmark Delivered'>{icons.undo}</IconBtn>
               </>
             )}
+            {!isWish && !isDelivered && (
+              <IconBtn onClick={toggleHold} disabled={loading} label={hold ? 'Resume Order' : 'Put on Hold'}>{icons.hold}</IconBtn>
+            )}
             {!isWish && (!paid ? (
               <IconBtn onClick={markPaid} disabled={loading} label='Mark as Paid'>{icons.pay}</IconBtn>
             ) : (
@@ -725,7 +744,7 @@ export default function OrderPage() {
             </div>
             <div className='field'>
               <label>Status</label>
-              <div className='status-pill'>{isWish ? 'Wish' : `${status === 'delivered' ? 'Delivered' : 'Draft'} · ${paid ? 'Paid' : 'Pending'}`}</div>
+              <div className='status-pill'>{isWish ? 'Wish' : `${status === 'delivered' ? 'Delivered' : 'Draft'} · ${paid ? 'Paid' : 'Pending'}${hold ? ' · On Hold' : ''}`}</div>
             </div>
             <div className='field'>
               <label>Customer Name</label>
@@ -772,7 +791,6 @@ export default function OrderPage() {
                 <thead>
                   <tr>
                     {showReadyHold && <th className='col-ready'>Ready</th>}
-                    {showReadyHold && <th className='col-hold'>Hold</th>}
                     <th>Product</th>
                     <th>Qty</th>
                     <th>Price</th>
@@ -790,7 +808,7 @@ export default function OrderPage() {
                       <Fragment key={item.id}>
                         {showDeliveredDivider && (
                           <tr className='delivered-section-row'>
-                            <td colSpan={showReadyHold ? 7 : 5}>Delivered</td>
+                            <td colSpan={showReadyHold ? 6 : 5}>Delivered</td>
                           </tr>
                         )}
                         <tr className={item.delivered ? 'item-row-delivered' : undefined}>
@@ -805,23 +823,8 @@ export default function OrderPage() {
                                   className='ready-check'
                                   checked={Boolean(item.ready)}
                                   onChange={() => toggleReady(index)}
-                                  disabled={loading || Boolean(item.hold)}
-                                  aria-label={`Mark ${item.product || 'item'} ready for delivery`}
-                                />
-                              )}
-                            </td>
-                          )}
-                          {showReadyHold && (
-                            <td className='col-hold'>
-                              <span className='item-line-label'>Hold</span>
-                              {item.delivered ? null : (
-                                <input
-                                  type='checkbox'
-                                  className='hold-check'
-                                  checked={Boolean(item.hold)}
-                                  onChange={() => toggleHold(index)}
                                   disabled={loading}
-                                  aria-label={`Hold ${item.product || 'item'} from Items to Deliver`}
+                                  aria-label={`Mark ${item.product || 'item'} ready for delivery`}
                                 />
                               )}
                             </td>
@@ -965,9 +968,7 @@ export default function OrderPage() {
         input:focus{outline:none;border-color:#2e7d32}
         .table-shell{border:1px solid #e8efe9;border-radius:14px;overflow:hidden;background:#fff;margin-top:10px;max-width:100%}
         .col-ready{width:64px;text-align:center}
-        .col-hold{width:64px;text-align:center}
         .ready-check{width:18px;height:18px;accent-color:#2e7d32;cursor:pointer}
-        .hold-check{width:18px;height:18px;accent-color:#c62828;cursor:pointer}
         .ready-done{display:inline-flex;align-items:center;justify-content:center;color:#2e7d32;font-weight:700}
         .item-row-delivered{background:#f3f6f3;color:#5f6f62}
         .item-row-delivered input{background:#eef2ee;color:#5f6f62}
@@ -1029,10 +1030,9 @@ export default function OrderPage() {
           .table-shell tr.item-row-delivered{background:#f3f6f3}
           .table-shell td{display:block;border:none;padding:0;min-width:0}
           .table-shell td.col-ready{grid-column:1 / -1;display:flex;align-items:center;gap:8px}
-          .table-shell td.col-hold{grid-column:1 / -1;display:flex;align-items:center;gap:8px}
-          .table-shell td.col-ready .item-line-label,.table-shell td.col-hold .item-line-label{margin-bottom:0}
-          .table-shell td:nth-child(1):not(.col-ready):not(.col-hold){grid-column:1 / -1}
-          .table-shell td.col-hold + td{grid-column:1 / -1}
+          .table-shell td.col-ready .item-line-label{margin-bottom:0}
+          .table-shell td:nth-child(1):not(.col-ready){grid-column:1 / -1}
+          .table-shell td.col-ready + td{grid-column:1 / -1}
           .table-shell td:nth-last-child(2){display:flex;align-items:flex-end;font-weight:700;color:#1b5e20;padding-bottom:10px}
           .table-shell td:last-child{grid-column:1 / -1;display:flex;justify-content:flex-end}
           .item-line-label{display:block;font-size:11px;color:#6b7a6f;font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px}

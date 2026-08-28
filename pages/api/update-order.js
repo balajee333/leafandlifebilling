@@ -23,7 +23,8 @@ export default async function handler(req, res) {
       items: result.order.items || [],
       total: result.order.total,
       status: result.order.status,
-      paid: result.order.paid ?? false
+      paid: result.order.paid ?? false,
+      hold: result.order.hold ?? false
     });
   } catch (error) {
     res.status(500).json({ error: error.message });

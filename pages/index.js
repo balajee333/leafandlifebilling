@@ -108,6 +108,19 @@ function FlatToggleLabel({ flatName, count, open }) {
   );
 }
 
+function PanelHeader({ title, count, open, onToggle }) {
+  return (
+    <button type='button' className='ll-panel-toggle' aria-expanded={open} onClick={onToggle}>
+      <span className={`ll-flat-chevron ${open ? 'is-open' : ''}`} aria-hidden='true'>
+        <svg viewBox='0 0 24 24' width='16' height='16' focusable='false'>
+          <path fill='currentColor' d='M9.29 6.71a1 1 0 0 0 0 1.41L13.17 12l-3.88 3.88a1 1 0 1 0 1.41 1.41l4.59-4.59a1 1 0 0 0 0-1.41L10.7 6.7a1 1 0 0 0-1.41.01z' />
+        </svg>
+      </span>
+      <h2>{title}{count != null && <span className='ll-section-count'> ({count})</span>}</h2>
+    </button>
+  );
+}
+
 export default function Home() {
   const router = useRouter();
   const [tab, setTab] = useState('orders');
@@ -120,9 +133,23 @@ export default function Home() {
   const [wishLoading, setWishLoading] = useState(false);
   const [wishLoaded, setWishLoaded] = useState(false);
   const [expandedFlats, setExpandedFlats] = useState(() => new Set());
+  const [openPanels, setOpenPanels] = useState(() => new Set());
   const [searchQuery, setSearchQuery] = useState('');
   const [itemOrdersDialog, setItemOrdersDialog] = useState(null);
   const [previewOrderFileName, setPreviewOrderFileName] = useState('');
+
+  function isPanelOpen(panelId) {
+    return openPanels.has(panelId);
+  }
+
+  function togglePanel(panelId) {
+    setOpenPanels(prev => {
+      const next = new Set(prev);
+      if (next.has(panelId)) next.delete(panelId);
+      else next.add(panelId);
+      return next;
+    });
+  }
 
   function flatGroupKey(sectionId, flatName) {
     return `${sectionId}::${flatName}`;
@@ -250,7 +277,12 @@ export default function Home() {
   }
 
   const notDeliveredOrders = useMemo(
-    () => orders.filter(order => order.status !== 'delivered' && matchesSearch(order, { numberKey: 'orderNumber' })),
+    () => orders.filter(order => order.status !== 'delivered' && !order.hold && matchesSearch(order, { numberKey: 'orderNumber' })),
+    [orders, searchQuery]
+  );
+
+  const onHoldOrders = useMemo(
+    () => orders.filter(order => order.status !== 'delivered' && order.hold && matchesSearch(order, { numberKey: 'orderNumber' })),
     [orders, searchQuery]
   );
 
@@ -269,13 +301,12 @@ export default function Home() {
     [wishOrders, searchQuery]
   );
 
-  function aggregateItemsByProduct(orderList, { includeItem } = {}) {
+  function aggregateItemsByProduct(orderList) {
     const totals = new Map();
     for (const order of orderList) {
-      if (order.status === 'delivered') continue;
+      if (order.status === 'delivered' || order.hold) continue;
       for (const item of order.items || []) {
         if (item.delivered) continue;
-        if (includeItem && !includeItem(item)) continue;
         const product = String(item.product || '').trim();
         if (!product) continue;
         const key = product.toLowerCase();
@@ -334,7 +365,7 @@ export default function Home() {
   }
 
   const itemsToDeliver = useMemo(() => {
-    const totals = aggregateItemsByProduct(orders, { includeItem: item => !item.hold });
+    const totals = aggregateItemsByProduct(orders);
     return finalizeItemRows(totals, searchQuery.trim().toLowerCase());
   }, [orders, searchQuery]);
 
@@ -346,9 +377,9 @@ export default function Home() {
   const itemsToDeliverTotalQty = useMemo(() => {
     let total = 0;
     for (const order of orders) {
-      if (order.status === 'delivered') continue;
+      if (order.status === 'delivered' || order.hold) continue;
       for (const item of order.items || []) {
-        if (item.delivered || item.hold) continue;
+        if (item.delivered) continue;
         if (!String(item.product || '').trim()) continue;
         total += Number(item.qty || 0);
       }
@@ -699,6 +730,10 @@ export default function Home() {
               {renderOrdersTable(notDeliveredOrders, 'No undelivered orders.', { showPaid: true, sectionId: 'orders-not-delivered' })}
             </section>
             <section className='ll-panel'>
+              <h2>On Hold <span className='ll-section-count'>({onHoldOrders.length})</span></h2>
+              {renderOrdersTable(onHoldOrders, 'No orders on hold.', { showPaid: true, sectionId: 'orders-on-hold' })}
+            </section>
+            <section className='ll-panel'>
               <h2>Delivered · Not Paid <span className='ll-section-count'>({deliveredUnpaidOrders.length})</span></h2>
               {renderOrdersTable(deliveredUnpaidOrders, 'No delivered unpaid orders.', { showPaid: true, sectionId: 'orders-delivered-unpaid' })}
             </section>
@@ -706,12 +741,21 @@ export default function Home() {
         ) : tab === 'items' ? (
           <div className='ll-grid'>
             <section className='ll-panel'>
-              <h2>Items to be delivered</h2>
-              {renderItemsList(itemsToDeliver, 'No items to deliver.')}
+              <PanelHeader
+                title='Items to be delivered'
+                open={isPanelOpen('items-to-deliver')}
+                onToggle={() => togglePanel('items-to-deliver')}
+              />
+              {isPanelOpen('items-to-deliver') && renderItemsList(itemsToDeliver, 'No items to deliver.')}
             </section>
             <section className='ll-panel'>
-              <h2>Wish List <span className='ll-section-count'>({wishLoading && !wishLoaded ? '…' : wishListItems.length})</span></h2>
-              {renderItemsList(wishListItems, 'No wish list items.', { qtyLabel: 'wished', isLoading: wishLoading && !wishLoaded })}
+              <PanelHeader
+                title='Wish List'
+                count={wishLoading && !wishLoaded ? '…' : wishListItems.length}
+                open={isPanelOpen('wish-list')}
+                onToggle={() => togglePanel('wish-list')}
+              />
+              {isPanelOpen('wish-list') && renderItemsList(wishListItems, 'No wish list items.', { qtyLabel: 'wished', isLoading: wishLoading && !wishLoaded })}
             </section>
           </div>
         ) : tab === 'wish' ? (
