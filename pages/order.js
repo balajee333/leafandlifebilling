@@ -435,7 +435,7 @@ export default function OrderPage() {
     const result = await res.json().catch(() => ({}));
     if (!res.ok) {
       alert(result.error || 'Unable to save order.');
-      return false;
+      return null;
     }
     setCurrentFileName(result.fileName);
     setOrderNumber(result.orderNumber || orderNumber);
@@ -461,7 +461,7 @@ export default function OrderPage() {
     } else {
       alert(successMessage);
     }
-    return true;
+    return result;
   }
 
   async function saveDraft() {
@@ -594,7 +594,22 @@ export default function OrderPage() {
       title: 'Mark as Paid',
       message: 'Mark this order as paid?\n\nThe linked bill will also be marked as paid.',
       confirmLabel: 'Mark Paid',
-      run: () => persistOrder(status, true, 'Order marked as paid. Linked bill updated.')
+      run: async () => {
+        const chatWindow = typeof window !== 'undefined'
+          ? window.open('', '_blank', 'noopener,noreferrer')
+          : null;
+        const result = await persistOrder(status, true, 'Order marked as paid. Linked bill updated.');
+        const thankYouUrl = result
+          ? toWhatsAppUrl(
+              customerPhone,
+              `Hi ${customerName}, thank you for your payment of ₹${Number(result.total ?? total).toFixed(2)} for order #${result.orderNumber || orderNumber}. We truly appreciate your support! 🌿`
+            )
+          : null;
+        if (chatWindow) {
+          if (thankYouUrl) chatWindow.location.href = thankYouUrl;
+          else chatWindow.close();
+        }
+      }
     });
   }
 
