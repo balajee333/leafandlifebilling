@@ -595,19 +595,13 @@ export default function OrderPage() {
       message: 'Mark this order as paid?\n\nThe linked bill will also be marked as paid.',
       confirmLabel: 'Mark Paid',
       run: async () => {
-        const chatWindow = typeof window !== 'undefined'
-          ? window.open('', '_blank', 'noopener,noreferrer')
-          : null;
         const result = await persistOrder(status, true, 'Order marked as paid. Linked bill updated.');
-        const thankYouUrl = result
-          ? toWhatsAppUrl(
-              customerPhone,
-              `Hi ${customerName}, thank you for your payment of ₹${Number(result.total ?? total).toFixed(2)} for order #${result.orderNumber || orderNumber}. We truly appreciate your support! 🌿`
-            )
-          : null;
-        if (chatWindow) {
-          if (thankYouUrl) chatWindow.location.href = thankYouUrl;
-          else chatWindow.close();
+        if (result && typeof window !== 'undefined') {
+          const thankYouUrl = toWhatsAppUrl(
+            customerPhone,
+            `Hi ${customerName}, thank you for your payment of ₹${Number(result.total ?? total).toFixed(2)} for order #${result.orderNumber || orderNumber}. We truly appreciate your support! 🌿`
+          );
+          if (thankYouUrl) window.location.href = thankYouUrl;
         }
       }
     });
