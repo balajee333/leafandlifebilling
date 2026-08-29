@@ -597,10 +597,15 @@ export default function OrderPage() {
       run: async () => {
         const result = await persistOrder(status, true, 'Order marked as paid. Linked bill updated.');
         if (result && typeof window !== 'undefined') {
-          const thankYouUrl = toWhatsAppUrl(
-            customerPhone,
-            `Hi ${customerName}, thank you for your payment of ₹${Number(result.total ?? total).toFixed(2)} for order #${result.orderNumber || orderNumber}. We truly appreciate your support! 🌿`
-          );
+          const paidTotal = Number(result.total ?? total).toFixed(2);
+          const paidOrderNumber = result.orderNumber || orderNumber;
+          const thankYouMessage = `Hi ${customerName},
+
+Thank you for your payment of ₹${paidTotal} for order #${paidOrderNumber}.
+We truly appreciate your support!
+
+🌿Leaf & Life Nursery🌿`;
+          const thankYouUrl = toWhatsAppUrl(customerPhone, thankYouMessage);
           if (thankYouUrl) window.location.href = thankYouUrl;
         }
       }
